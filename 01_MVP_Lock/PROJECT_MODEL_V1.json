@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Stilp Project Model V1",
+  "type": "object",
+  "required": [
+    "projectId",
+    "taskType",
+    "notes",
+    "planView",
+    "facades",
+    "manualPackingList",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "projectId": {
+      "type": "string",
+      "description": "UUID for opgaven"
+    },
+    "taskType": {
+      "type": "string",
+      "enum": [
+        "facade",
+        "gavl",
+        "trappe",
+        "helt_hus",
+        "andet"
+      ]
+    },
+    "notes": {
+      "type": "string"
+    },
+    "planView": {
+      "type": "object",
+      "required": ["enabled", "nodes", "edges"],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "x", "y"],
+            "properties": {
+              "id": { "type": "string" },
+              "x": { "type": "number" },
+              "y": { "type": "number" }
+            }
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "fromNodeId", "toNodeId", "lengthMm", "sideType"],
+            "properties": {
+              "id": { "type": "string" },
+              "fromNodeId": { "type": "string" },
+              "toNodeId": { "type": "string" },
+              "lengthMm": { "type": "integer", "minimum": 1 },
+              "sideType": {
+                "type": "string",
+                "enum": ["langside", "gavl", "andet"]
+              },
+              "eavesHeightMm": { "type": ["integer", "null"], "minimum": 1 },
+              "ridgeHeightMm": { "type": ["integer", "null"], "minimum": 1 }
+            }
+          }
+        }
+      }
+    },
+    "facades": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "sourceEdgeId",
+          "defaultSectionWidthMm",
+          "defaultStoreyHeightMm",
+          "topStandingHeightMm",
+          "topZoneExtraMm",
+          "sections",
+          "storeys",
+          "markers"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "sourceEdgeId": { "type": ["string", "null"] },
+          "defaultSectionWidthMm": { "type": "integer", "minimum": 1 },
+          "defaultStoreyHeightMm": { "type": "integer", "minimum": 1 },
+          "topStandingHeightMm": { "type": "integer", "minimum": 1 },
+          "topZoneExtraMm": { "type": "integer", "const": 1000 },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "widthMm"],
+              "properties": {
+                "id": { "type": "string" },
+                "widthMm": { "type": "integer", "minimum": 1 }
+              }
+            }
+          },
+          "storeys": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "heightMm"],
+              "properties": {
+                "id": { "type": "string" },
+                "heightMm": { "type": "integer", "minimum": 1 }
+              }
+            }
+          },
+          "markers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "type", "sectionIndex", "storeyIndex"],
+              "properties": {
+                "id": { "type": "string" },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "console",
+                    "diagonal",
+                    "ladder_deck",
+                    "opening",
+                    "text_note"
+                  ]
+                },
+                "sectionIndex": { "type": "integer", "minimum": 0 },
+                "storeyIndex": { "type": "integer", "minimum": 0 },
+                "text": { "type": ["string", "null"] },
+                "meta": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "manualPackingList": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "text"],
+        "properties": {
+          "id": { "type": "string" },
+          "text": { "type": "string" },
+          "quantity": { "type": ["number", "null"] },
+          "unit": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}
