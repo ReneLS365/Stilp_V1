@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../core/storage/local_project_store.dart';
 import '../features/export_preview/export_preview_screen.dart';
 import '../features/facade_editor/facade_editor_screen.dart';
 import '../features/manual_packing_list/manual_packing_list_screen.dart';
 import '../features/new_project/new_project_screen.dart';
 import '../features/plan_view/plan_view_screen.dart';
 import '../features/projects/projects_list_screen.dart';
-import 'app_screen.dart';
+import 'state/app_shell_controller.dart';
+import 'state/app_shell_state.dart';
 
 class StilpApp extends StatelessWidget {
   const StilpApp({super.key});
@@ -21,42 +22,37 @@ class StilpApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueGrey),
         useMaterial3: true,
       ),
-      home: StilpShell(projectStore: InMemoryProjectStore()),
+      home: const StilpShell(),
     );
   }
 }
 
-class StilpShell extends StatefulWidget {
-  const StilpShell({
-    super.key,
-    required this.projectStore,
-  });
-
-  final LocalProjectStore projectStore;
+class StilpShell extends ConsumerWidget {
+  const StilpShell({super.key});
 
   @override
-  State<StilpShell> createState() => _StilpShellState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final shellState = ref.watch(appShellControllerProvider);
+    final controller = ref.read(appShellControllerProvider.notifier);
 
-class _StilpShellState extends State<StilpShell> {
-  AppScreen _currentScreen = AppScreen.projects;
-
-  void _onDestinationSelected(int index) {
-    setState(() {
-      _currentScreen = AppScreen.values[index];
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_screenTitle(_currentScreen)),
-      ),
-      body: _screenBody(_currentScreen),
+      appBar: AppBar(title: Text(_screenTitle(shellState))),
+      body: _screenBody(shellState),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentScreen.index,
-        onDestinationSelected: _onDestinationSelected,
+        selectedIndex: shellState.flow.index,
+        onDestinationSelected: (index) {
+          switch (AppFlow.values[index]) {
+            case AppFlow.projects:
+              controller.showProjects();
+              break;
+            case AppFlow.newProject:
+              controller.showNewProject();
+              break;
+            case AppFlow.workspace:
+              controller.showWorkspace();
+              break;
+          }
+        },
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.folder_open_outlined),
@@ -69,61 +65,120 @@ class _StilpShellState extends State<StilpShell> {
             label: 'Ny',
           ),
           NavigationDestination(
-            icon: Icon(Icons.home_work_outlined),
-            selectedIcon: Icon(Icons.home_work),
-            label: 'Plan',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.grid_on_outlined),
-            selectedIcon: Icon(Icons.grid_on),
-            label: 'Facade',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.checklist_outlined),
-            selectedIcon: Icon(Icons.checklist),
-            label: 'Pakkeliste',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.picture_as_pdf_outlined),
-            selectedIcon: Icon(Icons.picture_as_pdf),
-            label: 'Eksport',
+            icon: Icon(Icons.workspaces_outline),
+            selectedIcon: Icon(Icons.workspaces),
+            label: 'Workspace',
           ),
         ],
       ),
     );
   }
 
-  Widget _screenBody(AppScreen screen) {
-    switch (screen) {
-      case AppScreen.projects:
+  Widget _screenBody(AppShellState state) {
+    switch (state.flow) {
+      case AppFlow.projects:
         return const ProjectsListScreen();
-      case AppScreen.newProject:
+      case AppFlow.newProject:
         return const NewProjectScreen();
-      case AppScreen.planView:
-        return const PlanViewScreen();
-      case AppScreen.facadeEditor:
-        return const FacadeEditorScreen();
-      case AppScreen.manualPackingList:
-        return const ManualPackingListScreen();
-      case AppScreen.exportPreview:
-        return const ExportPreviewScreen();
+      case AppFlow.workspace:
+        return ProjectWorkspaceScreen(state: state);
     }
   }
 
-  String _screenTitle(AppScreen screen) {
-    switch (screen) {
-      case AppScreen.projects:
+  String _screenTitle(AppShellState state) {
+    switch (state.flow) {
+      case AppFlow.projects:
         return 'Projektliste';
-      case AppScreen.newProject:
+      case AppFlow.newProject:
         return 'Ny opgave';
-      case AppScreen.planView:
+      case AppFlow.workspace:
+        return _workspaceTitle(state.workspaceScreen);
+    }
+  }
+
+  String _workspaceTitle(WorkspaceScreen screen) {
+    switch (screen) {
+      case WorkspaceScreen.planView:
         return 'Planvisning';
-      case AppScreen.facadeEditor:
+      case WorkspaceScreen.facadeEditor:
         return 'Facadeeditor';
-      case AppScreen.manualPackingList:
+      case WorkspaceScreen.manualPackingList:
         return 'Manuel pakkeliste';
-      case AppScreen.exportPreview:
+      case WorkspaceScreen.exportPreview:
         return 'Eksport-preview';
+    }
+  }
+}
+
+class ProjectWorkspaceScreen extends ConsumerWidget {
+  const ProjectWorkspaceScreen({
+    required this.state,
+    super.key,
+  });
+
+  final AppShellState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controller = ref.read(appShellControllerProvider.notifier);
+
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: SegmentedButton<WorkspaceScreen>(
+            segments: const [
+              ButtonSegment(
+                value: WorkspaceScreen.planView,
+                icon: Icon(Icons.home_work_outlined),
+                label: Text('Plan'),
+              ),
+              ButtonSegment(
+                value: WorkspaceScreen.facadeEditor,
+                icon: Icon(Icons.grid_on_outlined),
+                label: Text('Facade'),
+              ),
+              ButtonSegment(
+                value: WorkspaceScreen.manualPackingList,
+                icon: Icon(Icons.checklist_outlined),
+                label: Text('Pakkeliste'),
+              ),
+              ButtonSegment(
+                value: WorkspaceScreen.exportPreview,
+                icon: Icon(Icons.picture_as_pdf_outlined),
+                label: Text('Eksport'),
+              ),
+            ],
+            selected: {state.workspaceScreen},
+            onSelectionChanged: (selection) {
+              controller.setWorkspaceScreen(selection.first);
+            },
+          ),
+        ),
+        if (state.activeProjectId == null)
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Text(
+              'Vælg et projekt i Projektliste for at aktivere projektkontekst.',
+              textAlign: TextAlign.center,
+            ),
+          ),
+        Expanded(child: _workspaceBody(state.workspaceScreen)),
+      ],
+    );
+  }
+
+  Widget _workspaceBody(WorkspaceScreen screen) {
+    switch (screen) {
+      case WorkspaceScreen.planView:
+        return const PlanViewScreen();
+      case WorkspaceScreen.facadeEditor:
+        return const FacadeEditorScreen();
+      case WorkspaceScreen.manualPackingList:
+        return const ManualPackingListScreen();
+      case WorkspaceScreen.exportPreview:
+        return const ExportPreviewScreen();
     }
   }
 }
