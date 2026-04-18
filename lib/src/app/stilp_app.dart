@@ -44,10 +44,13 @@ class StilpShell extends ConsumerWidget {
           switch (AppFlow.values[index]) {
             case AppFlow.projects:
               controller.showProjects();
+              break;
             case AppFlow.newProject:
               controller.showNewProject();
+              break;
             case AppFlow.workspace:
               controller.showWorkspace();
+              break;
           }
         },
         destinations: const [
