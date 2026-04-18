@@ -47,9 +47,60 @@ Brug kun disse statustyper:
 
 ## Fremdrift
 - Total tasks: 21
-- Fase 0 setup: færdig
-- Implementering tilbage: 21 tasks
+- Fase 0 setup: done
+- Done: 2
+- Active: 1
+- Planned: 18
 - Aktuel fase: Fase 1
+- Aktuel fokus: T03
+
+## Aktuel repo-status
+Repoet indeholder allerede:
+- Flutter app shell
+- base navigation
+- 6 låste hovedskærme som placeholders
+- `AppScreen` enum
+- `LocalProjectStore` interface
+- `InMemoryProjectStore`
+- basal app-shell test
+
+Det betyder:
+- T01 er reelt done
+- T02 er reelt done
+- T03 er startet, men ikke færdig
+
+---
+
+# Låste beslutninger før næste fase
+
+## 1. Navigation model
+Fra og med T04 er den ønskede model:
+- `ProjectsList -> ProjectWorkspace`
+- `ProjectWorkspace` ejer projektkontekst
+- planvisning, facadeeditor, manuel pakkeliste og eksport hører under et aktivt projekt
+
+Den nuværende globale bundnavigation er accepteret som skeleton i T01/T02, men er ikke den endelige struktur for projektflowet.
+
+## 2. State management
+State management låses til:
+- `Riverpod`
+
+Begrundelse:
+- passer til feature-first Flutter-struktur
+- gør projektkontekst og lokal dataflow lettere at holde ren
+- er mere robust end fortsat shell-`setState` når T04-T06 bygges
+
+## 3. Persistence strategi i v1
+Persistence i v1 låses til:
+- lokale JSON-filer i app documents directory
+
+Det betyder:
+- ingen backend
+- ingen cloud
+- ingen Hive/Isar i første omgang
+- ingen unødig databaskompleksitet før det er nødvendigt
+
+T06 skal derfor implementeres som lokal filbaseret persistence for det fulde projektdokument.
 
 ---
 
@@ -106,7 +157,7 @@ Mål: brugbart output og basal robusthed.
 
 ## T01 — Initial app shell
 - Fase: 1
-- Status: planned
+- Status: done
 - Mål: oprette Flutter app skeleton med tydelig mappe- og filstruktur
 - Indhold:
   - app entry
@@ -121,7 +172,7 @@ Mål: brugbart output og basal robusthed.
 
 ## T02 — Locked screens and navigation
 - Fase: 1
-- Status: planned
+- Status: done
 - Mål: oprette låste hovedskærme og navigation
 - Indhold:
   - Project list
@@ -138,15 +189,22 @@ Mål: brugbart output og basal robusthed.
 
 ## T03 — Local-first app structure
 - Fase: 1
-- Status: planned
+- Status: active
 - Mål: lægge lokal struktur for data og app state
 - Indhold:
   - local-first foldering
-  - app state skeleton
+  - Riverpod app state skeleton
   - persistence interfaces
+  - klar overgang væk fra global shell-navigation som endelig projektmodel
+- Delvist færdigt i repo:
+  - local-first foldering
+  - `LocalProjectStore`
+  - `InMemoryProjectStore`
 - Afhænger af: T01
 - Done når:
   - lokal struktur findes
+  - state management er låst og indført
+  - persistence interface er klar til T04-T06
   - ingen cloud eller backend er introduceret
 
 ## T04 — New project flow
@@ -157,6 +215,7 @@ Mål: brugbart output og basal robusthed.
   - create project
   - task type
   - notes
+  - åbning af projekt i `ProjectWorkspace`
 - Afhænger af: T02, T03
 - Done når:
   - bruger kan oprette projekt
@@ -167,16 +226,19 @@ Mål: brugbart output og basal robusthed.
 - Status: planned
 - Mål: implementere den låste projektmodel i kode
 - Indhold:
-  - project
+  - full project model
   - planView
   - facades
   - storeys
   - sections
   - markers
   - manualPackingList
+  - createdAt
+  - updatedAt
 - Afhænger af: T03
 - Done når:
   - modellen matcher lock-filerne
+  - summary-modeller og fuld model er tydeligt adskilt
   - ingen komponentmodeller er tilføjet
 
 ## T06 — Local persistence wired
@@ -187,9 +249,11 @@ Mål: brugbart output og basal robusthed.
   - save
   - load
   - update
+  - JSON file persistence in app documents directory
 - Afhænger af: T04, T05
 - Done når:
   - projektdata overlever app-genstart
+  - lokal persistence virker uden backend og uden cloud
 
 ## T07 — Plan view canvas
 - Fase: 3
@@ -388,6 +452,7 @@ Efter T03
 - app shell findes
 - navigation kan bygges ovenpå
 - lokal struktur er låst
+- state management og persistence-retning er låst
 
 ## Milepæl B
 Efter T06
@@ -416,14 +481,14 @@ Efter T21
 # Opdateringsregel
 Når en Codex-opgave er merged:
 1. opdatér task-status i dette dokument
-2. skriv PR-nummer under den konkrete task
+2. skriv PR-nummer under den konkrete task hvis relevant
 3. flyt næste task til status `active`
 4. opdatér fremdriftstal øverst
 
 # Aktuel anbefalet startordre
-1. T01 Initial app shell
-2. T02 Locked screens and navigation
-3. T03 Local-first app structure
-4. T04 New project flow
-5. T05 Project model v1 in code
-6. T06 Local persistence wired
+1. T03 Local-first app structure
+2. T04 New project flow
+3. T05 Project model v1 in code
+4. T06 Local persistence wired
+5. T07 Plan view canvas
+6. T08 Side measurement and side type
