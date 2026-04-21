@@ -48,18 +48,18 @@ Brug kun disse statustyper:
 ## Fremdrift
 - Total tasks: 21
 - Fase 0 setup: done
-- Done: 2
+- Done: 4
 - Active: 1
-- Planned: 18
-- Aktuel fase: Fase 1
-- Aktuel fokus: T03
+- Planned: 16
+- Aktuel fase: Fase 2
+- Aktuel fokus: T05
 
 ## Aktuel repo-status
 Repoet indeholder allerede:
 - Flutter app shell
 - base navigation
 - 6 låste hovedskærme som placeholders
-- `AppScreen` enum
+- `AppFlow` app shell state
 - `LocalProjectStore` interface
 - `InMemoryProjectStore`
 - basal app-shell test
@@ -67,7 +67,9 @@ Repoet indeholder allerede:
 Det betyder:
 - T01 er reelt done
 - T02 er reelt done
-- T03 er startet, men ikke færdig
+- T03 er reelt done
+- T04 er implementeret med lokal oprettelse og åbning af projekt
+- T05 er næste aktive task
 
 ---
 
@@ -189,17 +191,18 @@ Mål: brugbart output og basal robusthed.
 
 ## T03 — Local-first app structure
 - Fase: 1
-- Status: active
+- Status: done
 - Mål: lægge lokal struktur for data og app state
 - Indhold:
   - local-first foldering
   - Riverpod app state skeleton
   - persistence interfaces
   - klar overgang væk fra global shell-navigation som endelig projektmodel
-- Delvist færdigt i repo:
+- Implementeret i repo:
   - local-first foldering
   - `LocalProjectStore`
   - `InMemoryProjectStore`
+  - Riverpod app shell + project session state
 - Afhænger af: T01
 - Done når:
   - lokal struktur findes
@@ -209,7 +212,7 @@ Mål: brugbart output og basal robusthed.
 
 ## T04 — New project flow
 - Fase: 2
-- Status: planned
+- Status: done
 - Mål: oprette ny opgave med opgavetype og noter
 - Indhold:
   - create project
@@ -223,7 +226,7 @@ Mål: brugbart output og basal robusthed.
 
 ## T05 — Project model v1 in code
 - Fase: 2
-- Status: planned
+- Status: active
 - Mål: implementere den låste projektmodel i kode
 - Indhold:
   - full project model

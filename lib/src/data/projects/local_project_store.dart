@@ -27,8 +27,8 @@ class InMemoryProjectStore implements LocalProjectStore {
   final Map<String, ProjectDocument> _projects = {
     'demo-project': ProjectDocument(
       projectId: 'demo-project',
-      taskType: 'Stillas',
-      notes: 'Demoprosjekt',
+      taskType: 'Stillads',
+      notes: 'Demo-projekt',
       updatedAt: DateTime(2026, 1, 1),
     ),
   };
@@ -45,7 +45,7 @@ class InMemoryProjectStore implements LocalProjectStore {
 
   @override
   Future<List<ProjectSummary>> listProjects() async {
-    return _projects.values
+    final summaries = _projects.values
         .map(
           (project) => ProjectSummary(
             projectId: project.projectId,
@@ -55,6 +55,9 @@ class InMemoryProjectStore implements LocalProjectStore {
           ),
         )
         .toList(growable: false);
+
+    summaries.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return summaries;
   }
 
   @override
