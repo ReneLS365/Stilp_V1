@@ -48,11 +48,11 @@ Brug kun disse statustyper:
 ## Fremdrift
 - Total tasks: 21
 - Fase 0 setup: done
-- Done: 5
+- Done: 6
 - Active: 1
-- Planned: 15
+- Planned: 14
 - Aktuel fase: Fase 2
-- Aktuel fokus: T06
+- Aktuel fokus: T07
 
 ## Aktuel repo-status
 Repoet indeholder allerede:
@@ -61,7 +61,7 @@ Repoet indeholder allerede:
 - 6 låste hovedskærme som placeholders
 - `AppFlow` app shell state
 - `LocalProjectStore` interface
-- `InMemoryProjectStore`
+- filbaseret `LocalProjectStore` i app documents directory
 - basal app-shell test
 
 Det betyder:
@@ -70,7 +70,8 @@ Det betyder:
 - T03 er reelt done
 - T04 er implementeret med lokal oprettelse og åbning af projekt
 - T05 er implementeret i kode med fuld projektmodel
-- T06 er næste aktive task
+- T06 er implementeret med lokal fil-persistence
+- T07 er næste aktive task
 
 ---
 
@@ -103,7 +104,7 @@ Det betyder:
 - ingen Hive/Isar i første omgang
 - ingen unødig databaskompleksitet før det er nødvendigt
 
-T06 skal derfor implementeres som lokal filbaseret persistence for det fulde projektdokument.
+T06 er implementeret som lokal filbaseret persistence for det fulde projektdokument.
 
 ---
 
@@ -247,7 +248,7 @@ Mål: brugbart output og basal robusthed.
 
 ## T06 — Local persistence wired
 - Fase: 2
-- Status: active
+- Status: done
 - Mål: gemme, åbne og opdatere projekt lokalt
 - Indhold:
   - save
@@ -261,7 +262,7 @@ Mål: brugbart output og basal robusthed.
 
 ## T07 — Plan view canvas
 - Fase: 3
-- Status: planned
+- Status: active
 - Mål: tegne bygning oppefra
 - Indhold:
   - sides
