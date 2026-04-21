@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/state/app_shell_controller.dart';
-import '../../data/projects/local_project_store.dart';
+import '../../core/models/project_document.dart';
 import '../project_session/state/project_session_controller.dart';
 
 class NewProjectScreen extends ConsumerStatefulWidget {
@@ -45,11 +45,11 @@ class _NewProjectScreenState extends ConsumerState<NewProjectScreen> {
       final store = ref.read(localProjectStoreProvider);
 
       await store.saveProject(
-        ProjectDocument(
+        ProjectDocument.empty(
           projectId: projectId,
           taskType: taskType,
           notes: notes,
-          updatedAt: now,
+          now: now,
         ),
       );
 

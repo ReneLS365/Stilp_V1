@@ -10,4 +10,18 @@ class ProjectSummary {
   final String taskType;
   final String notes;
   final DateTime updatedAt;
+
+  ProjectSummary copyWith({
+    String? projectId,
+    String? taskType,
+    String? notes,
+    DateTime? updatedAt,
+  }) {
+    return ProjectSummary(
+      projectId: projectId ?? this.projectId,
+      taskType: taskType ?? this.taskType,
+      notes: notes ?? this.notes,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }

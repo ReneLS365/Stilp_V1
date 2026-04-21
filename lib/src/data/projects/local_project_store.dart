@@ -1,18 +1,5 @@
+import '../../core/models/project_document.dart';
 import '../../core/models/project_summary.dart';
-
-class ProjectDocument {
-  const ProjectDocument({
-    required this.projectId,
-    required this.taskType,
-    required this.notes,
-    required this.updatedAt,
-  });
-
-  final String projectId;
-  final String taskType;
-  final String notes;
-  final DateTime updatedAt;
-}
 
 abstract class LocalProjectStore {
   Future<List<ProjectSummary>> listProjects();
@@ -25,11 +12,11 @@ class InMemoryProjectStore implements LocalProjectStore {
   InMemoryProjectStore();
 
   final Map<String, ProjectDocument> _projects = {
-    'demo-project': ProjectDocument(
+    'demo-project': ProjectDocument.empty(
       projectId: 'demo-project',
       taskType: 'Stillads',
       notes: 'Demo-projekt',
-      updatedAt: DateTime(2026, 1, 1),
+      now: DateTime(2026, 1, 1),
     ),
   };
 
