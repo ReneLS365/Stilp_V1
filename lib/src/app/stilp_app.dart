@@ -167,7 +167,7 @@ class ProjectWorkspaceScreen extends ConsumerWidget {
               child: Padding(
                 padding: EdgeInsets.all(24),
                 child: Text(
-                  'Ingen aktiv prosjektøkt. Åpne et prosjekt fra prosjektlisten for å starte workspace.',
+                  'Ingen aktiv projektsession. Åbn et projekt fra projektlisten for at starte workspace.',
                   textAlign: TextAlign.center,
                 ),
               ),

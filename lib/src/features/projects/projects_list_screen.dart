@@ -17,7 +17,7 @@ class ProjectsListScreen extends ConsumerWidget {
         if (projects.isEmpty) {
           return const PlaceholderScreen(
             title: 'Projektliste',
-            subtitle: 'Ingen lokale prosjekter enda.',
+            subtitle: 'Ingen lokale projekter endnu.',
           );
         }
 
