@@ -48,11 +48,11 @@ Brug kun disse statustyper:
 ## Fremdrift
 - Total tasks: 21
 - Fase 0 setup: done
-- Done: 4
+- Done: 5
 - Active: 1
-- Planned: 16
+- Planned: 15
 - Aktuel fase: Fase 2
-- Aktuel fokus: T05
+- Aktuel fokus: T06
 
 ## Aktuel repo-status
 Repoet indeholder allerede:
@@ -69,7 +69,8 @@ Det betyder:
 - T02 er reelt done
 - T03 er reelt done
 - T04 er implementeret med lokal oprettelse og åbning af projekt
-- T05 er næste aktive task
+- T05 er implementeret i kode med fuld projektmodel
+- T06 er næste aktive task
 
 ---
 
@@ -226,7 +227,7 @@ Mål: brugbart output og basal robusthed.
 
 ## T05 — Project model v1 in code
 - Fase: 2
-- Status: active
+- Status: done
 - Mål: implementere den låste projektmodel i kode
 - Indhold:
   - full project model
@@ -246,7 +247,7 @@ Mål: brugbart output og basal robusthed.
 
 ## T06 — Local persistence wired
 - Fase: 2
-- Status: planned
+- Status: active
 - Mål: gemme, åbne og opdatere projekt lokalt
 - Indhold:
   - save
