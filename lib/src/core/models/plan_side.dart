@@ -1,7 +1,40 @@
 enum PlanSideType {
-  wall,
-  opening,
-  free,
+  langside,
+  gavl,
+  andet,
+}
+
+extension PlanSideTypeJson on PlanSideType {
+  String get jsonValue {
+    switch (this) {
+      case PlanSideType.langside:
+        return 'langside';
+      case PlanSideType.gavl:
+        return 'gavl';
+      case PlanSideType.andet:
+        return 'andet';
+    }
+  }
+}
+
+PlanSideType planSideTypeFromJsonValue(String? rawType) {
+  switch (rawType) {
+    case 'langside':
+      return PlanSideType.langside;
+    case 'gavl':
+      return PlanSideType.gavl;
+    case 'andet':
+      return PlanSideType.andet;
+    // Backward compatibility for pre-lock temporary values.
+    case 'wall':
+      return PlanSideType.langside;
+    case 'opening':
+      return PlanSideType.gavl;
+    case 'free':
+      return PlanSideType.andet;
+    default:
+      return PlanSideType.andet;
+  }
 }
 
 class PlanSide {
@@ -41,21 +74,17 @@ class PlanSide {
       'sideId': sideId,
       'label': label,
       'lengthM': lengthM,
-      'sideType': sideType.name,
+      'sideType': sideType.jsonValue,
       'notes': notes,
     };
   }
 
   factory PlanSide.fromJson(Map<String, dynamic> json) {
-    final rawType = json['sideType'] as String?;
     return PlanSide(
       sideId: (json['sideId'] as String?) ?? '',
       label: (json['label'] as String?) ?? '',
       lengthM: (json['lengthM'] as num?)?.toDouble() ?? 0,
-      sideType: PlanSideType.values.firstWhere(
-        (value) => value.name == rawType,
-        orElse: () => PlanSideType.wall,
-      ),
+      sideType: planSideTypeFromJsonValue(json['sideType'] as String?),
       notes: json['notes'] as String?,
     );
   }

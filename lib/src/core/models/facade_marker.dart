@@ -6,75 +6,100 @@ enum FacadeMarkerType {
   textNote,
 }
 
+extension FacadeMarkerTypeJson on FacadeMarkerType {
+  String get jsonValue {
+    switch (this) {
+      case FacadeMarkerType.console:
+        return 'console';
+      case FacadeMarkerType.diagonal:
+        return 'diagonal';
+      case FacadeMarkerType.ladderDeck:
+        return 'ladder_deck';
+      case FacadeMarkerType.opening:
+        return 'opening';
+      case FacadeMarkerType.textNote:
+        return 'text_note';
+    }
+  }
+}
+
+FacadeMarkerType facadeMarkerTypeFromJsonValue(String? rawType) {
+  switch (rawType) {
+    case 'console':
+      return FacadeMarkerType.console;
+    case 'diagonal':
+      return FacadeMarkerType.diagonal;
+    case 'ladder_deck':
+    case 'ladderDeck':
+      return FacadeMarkerType.ladderDeck;
+    case 'opening':
+      return FacadeMarkerType.opening;
+    case 'text_note':
+    case 'textNote':
+      return FacadeMarkerType.textNote;
+    default:
+      return FacadeMarkerType.textNote;
+  }
+}
+
 class FacadeMarker {
   const FacadeMarker({
     required this.id,
     required this.type,
-    this.sectionId,
-    this.storeyId,
-    this.xM,
-    this.yM,
+    required this.sectionIndex,
+    required this.storeyIndex,
     this.text,
+    this.meta,
   });
 
   final String id;
   final FacadeMarkerType type;
-  final String? sectionId;
-  final String? storeyId;
-  final double? xM;
-  final double? yM;
+  final int sectionIndex;
+  final int storeyIndex;
   final String? text;
+  final Map<String, dynamic>? meta;
 
   FacadeMarker copyWith({
     String? id,
     FacadeMarkerType? type,
-    String? sectionId,
-    String? storeyId,
-    double? xM,
-    double? yM,
+    int? sectionIndex,
+    int? storeyIndex,
     String? text,
-    bool clearSectionId = false,
-    bool clearStoreyId = false,
-    bool clearXM = false,
-    bool clearYM = false,
+    Map<String, dynamic>? meta,
     bool clearText = false,
+    bool clearMeta = false,
   }) {
     return FacadeMarker(
       id: id ?? this.id,
       type: type ?? this.type,
-      sectionId: clearSectionId ? null : (sectionId ?? this.sectionId),
-      storeyId: clearStoreyId ? null : (storeyId ?? this.storeyId),
-      xM: clearXM ? null : (xM ?? this.xM),
-      yM: clearYM ? null : (yM ?? this.yM),
+      sectionIndex: sectionIndex ?? this.sectionIndex,
+      storeyIndex: storeyIndex ?? this.storeyIndex,
       text: clearText ? null : (text ?? this.text),
+      meta: clearMeta ? null : (meta ?? this.meta),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'type': type.name,
-      'sectionId': sectionId,
-      'storeyId': storeyId,
-      'xM': xM,
-      'yM': yM,
+      'type': type.jsonValue,
+      'sectionIndex': sectionIndex,
+      'storeyIndex': storeyIndex,
       'text': text,
+      'meta': meta,
     };
   }
 
   factory FacadeMarker.fromJson(Map<String, dynamic> json) {
-    final rawType = json['type'] as String?;
     return FacadeMarker(
       id: (json['id'] as String?) ?? '',
-      type: FacadeMarkerType.values.firstWhere(
-        (value) => value.name == rawType,
-        orElse: () => FacadeMarkerType.textNote,
-      ),
-      sectionId: json['sectionId'] as String?,
-      storeyId: json['storeyId'] as String?,
-      xM: (json['xM'] as num?)?.toDouble(),
-      yM: (json['yM'] as num?)?.toDouble(),
+      type: facadeMarkerTypeFromJsonValue(json['type'] as String?),
+      sectionIndex: (json['sectionIndex'] as num?)?.toInt() ?? 0,
+      storeyIndex: (json['storeyIndex'] as num?)?.toInt() ?? 0,
       text: json['text'] as String?,
+      meta: (json['meta'] as Map?)?.map(
+        (key, value) => MapEntry('$key', value),
+      ),
     );
   }
 }
