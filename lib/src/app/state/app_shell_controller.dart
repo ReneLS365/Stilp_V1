@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models/project_summary.dart';
-import '../../core/storage/local_project_store.dart';
+import '../../data/projects/local_project_store.dart';
 import 'app_shell_state.dart';
 
 final localProjectStoreProvider = Provider<LocalProjectStore>((ref) {
@@ -32,19 +32,5 @@ class AppShellController extends Notifier<AppShellState> {
 
   void showWorkspace() {
     state = state.copyWith(flow: AppFlow.workspace);
-  }
-
-  void openWorkspaceForProject(String projectId) {
-    state = state.copyWith(
-      flow: AppFlow.workspace,
-      activeProjectId: projectId,
-    );
-  }
-
-  void setWorkspaceScreen(WorkspaceScreen screen) {
-    state = state.copyWith(
-      flow: AppFlow.workspace,
-      workspaceScreen: screen,
-    );
   }
 }

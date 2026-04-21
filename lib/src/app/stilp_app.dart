@@ -6,6 +6,8 @@ import '../features/facade_editor/facade_editor_screen.dart';
 import '../features/manual_packing_list/manual_packing_list_screen.dart';
 import '../features/new_project/new_project_screen.dart';
 import '../features/plan_view/plan_view_screen.dart';
+import '../features/project_session/state/project_session_controller.dart';
+import '../features/project_session/state/project_session_state.dart';
 import '../features/projects/projects_list_screen.dart';
 import 'state/app_shell_controller.dart';
 import 'state/app_shell_state.dart';
@@ -33,10 +35,11 @@ class StilpShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final shellState = ref.watch(appShellControllerProvider);
+    final projectSession = ref.watch(projectSessionControllerProvider);
     final controller = ref.read(appShellControllerProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(title: Text(_screenTitle(shellState))),
+      appBar: AppBar(title: Text(_screenTitle(shellState, projectSession))),
       body: _screenBody(shellState),
       bottomNavigationBar: NavigationBar(
         selectedIndex: shellState.flow.index,
@@ -81,103 +84,112 @@ class StilpShell extends ConsumerWidget {
       case AppFlow.newProject:
         return const NewProjectScreen();
       case AppFlow.workspace:
-        return ProjectWorkspaceScreen(state: state);
+        return const ProjectWorkspaceScreen();
     }
   }
 
-  String _screenTitle(AppShellState state) {
+  String _screenTitle(
+    AppShellState state,
+    ProjectSessionState? projectSession,
+  ) {
     switch (state.flow) {
       case AppFlow.projects:
         return 'Projektliste';
       case AppFlow.newProject:
         return 'Ny opgave';
       case AppFlow.workspace:
-        return _workspaceTitle(state.workspaceScreen);
+        if (projectSession == null) {
+          return 'Workspace';
+        }
+        return _workspaceTitle(projectSession.activeTab);
     }
   }
 
-  String _workspaceTitle(WorkspaceScreen screen) {
-    switch (screen) {
-      case WorkspaceScreen.planView:
+  String _workspaceTitle(ProjectWorkspaceTab tab) {
+    switch (tab) {
+      case ProjectWorkspaceTab.plan:
         return 'Planvisning';
-      case WorkspaceScreen.facadeEditor:
+      case ProjectWorkspaceTab.facade:
         return 'Facadeeditor';
-      case WorkspaceScreen.manualPackingList:
+      case ProjectWorkspaceTab.packing:
         return 'Manuel pakkeliste';
-      case WorkspaceScreen.exportPreview:
+      case ProjectWorkspaceTab.exportPreview:
         return 'Eksport-preview';
     }
   }
 }
 
 class ProjectWorkspaceScreen extends ConsumerWidget {
-  const ProjectWorkspaceScreen({
-    required this.state,
-    super.key,
-  });
-
-  final AppShellState state;
+  const ProjectWorkspaceScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final controller = ref.read(appShellControllerProvider.notifier);
+    final session = ref.watch(projectSessionControllerProvider);
+    final sessionController = ref.read(projectSessionControllerProvider.notifier);
 
     return Column(
       children: [
         Container(
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: SegmentedButton<WorkspaceScreen>(
+          child: SegmentedButton<ProjectWorkspaceTab>(
             segments: const [
               ButtonSegment(
-                value: WorkspaceScreen.planView,
+                value: ProjectWorkspaceTab.plan,
                 icon: Icon(Icons.home_work_outlined),
                 label: Text('Plan'),
               ),
               ButtonSegment(
-                value: WorkspaceScreen.facadeEditor,
+                value: ProjectWorkspaceTab.facade,
                 icon: Icon(Icons.grid_on_outlined),
                 label: Text('Facade'),
               ),
               ButtonSegment(
-                value: WorkspaceScreen.manualPackingList,
+                value: ProjectWorkspaceTab.packing,
                 icon: Icon(Icons.checklist_outlined),
                 label: Text('Pakkeliste'),
               ),
               ButtonSegment(
-                value: WorkspaceScreen.exportPreview,
+                value: ProjectWorkspaceTab.exportPreview,
                 icon: Icon(Icons.picture_as_pdf_outlined),
                 label: Text('Eksport'),
               ),
             ],
-            selected: {state.workspaceScreen},
+            selected: {session?.activeTab ?? ProjectWorkspaceTab.plan},
             onSelectionChanged: (selection) {
-              controller.setWorkspaceScreen(selection.first);
+              sessionController.setTab(selection.first);
             },
           ),
         ),
-        if (state.activeProjectId == null)
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Text(
-              'Vælg et projekt i Projektliste for at aktivere projektkontekst.',
-              textAlign: TextAlign.center,
+        if (session == null)
+          const Expanded(
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Text(
+                  'Ingen aktiv prosjektøkt. Åpne et prosjekt fra prosjektlisten for å starte workspace.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
             ),
+          )
+        else
+          Expanded(
+            child: _workspaceBody(session.activeTab),
           ),
-        Expanded(child: _workspaceBody(state.workspaceScreen)),
       ],
     );
   }
 
-  Widget _workspaceBody(WorkspaceScreen screen) {
-    switch (screen) {
-      case WorkspaceScreen.planView:
+  Widget _workspaceBody(ProjectWorkspaceTab tab) {
+    switch (tab) {
+      case ProjectWorkspaceTab.plan:
         return const PlanViewScreen();
-      case WorkspaceScreen.facadeEditor:
+      case ProjectWorkspaceTab.facade:
         return const FacadeEditorScreen();
-      case WorkspaceScreen.manualPackingList:
+      case ProjectWorkspaceTab.packing:
         return const ManualPackingListScreen();
-      case WorkspaceScreen.exportPreview:
+      case ProjectWorkspaceTab.exportPreview:
         return const ExportPreviewScreen();
     }
   }
