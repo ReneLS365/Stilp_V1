@@ -43,6 +43,30 @@ class PlanViewEdge {
   final int? eavesHeightMm;
   final int? ridgeHeightMm;
 
+  PlanViewEdge copyWith({
+    String? id,
+    String? fromNodeId,
+    String? toNodeId,
+    int? lengthMm,
+    PlanSideType? sideType,
+    Object? eavesHeightMm = _unset,
+    Object? ridgeHeightMm = _unset,
+  }) {
+    return PlanViewEdge(
+      id: id ?? this.id,
+      fromNodeId: fromNodeId ?? this.fromNodeId,
+      toNodeId: toNodeId ?? this.toNodeId,
+      lengthMm: lengthMm ?? this.lengthMm,
+      sideType: sideType ?? this.sideType,
+      eavesHeightMm: eavesHeightMm == _unset
+          ? this.eavesHeightMm
+          : eavesHeightMm as int?,
+      ridgeHeightMm: ridgeHeightMm == _unset
+          ? this.ridgeHeightMm
+          : ridgeHeightMm as int?,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -135,3 +159,5 @@ class PlanViewData {
     );
   }
 }
+
+const _unset = Object();
