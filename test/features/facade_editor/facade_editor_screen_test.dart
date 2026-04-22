@@ -120,7 +120,7 @@ void main() {
     await tester.scrollUntilVisible(
       emptyStateText,
       200,
-      scrollable: find.byType(ListView).last,
+      scrollable: find.byType(Scrollable).last,
     );
     expect(emptyStateText, findsOneWidget);
 
@@ -132,7 +132,7 @@ void main() {
     await tester.scrollUntilVisible(
       generatedStateText,
       200,
-      scrollable: find.byType(ListView).last,
+      scrollable: find.byType(Scrollable).last,
     );
     expect(generatedStateText, findsOneWidget);
   });
