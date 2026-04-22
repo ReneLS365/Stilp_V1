@@ -9,8 +9,10 @@ import '../../core/models/facade_storey.dart';
 import '../../core/models/plan_side.dart';
 import '../plan_view/state/plan_view_controller.dart';
 import '../project_session/state/project_session_controller.dart';
+import 'facade_standing_height_input_parser.dart';
 import 'state/facade_grid_adjustment_controller.dart';
 import 'state/facade_grid_generation_controller.dart';
+import 'state/facade_standing_height_controller.dart';
 
 class FacadeEditorScreen extends ConsumerStatefulWidget {
   const FacadeEditorScreen({super.key});
@@ -24,6 +26,7 @@ class _FacadeEditorScreenState extends ConsumerState<FacadeEditorScreen> {
   final _sectionWidthController = TextEditingController();
   final _storeysController = TextEditingController();
   final _storeyHeightController = TextEditingController();
+  final _standingHeightController = TextEditingController();
 
   String? _lastFacadeSideId;
 
@@ -33,6 +36,7 @@ class _FacadeEditorScreenState extends ConsumerState<FacadeEditorScreen> {
     _sectionWidthController.dispose();
     _storeysController.dispose();
     _storeyHeightController.dispose();
+    _standingHeightController.dispose();
     super.dispose();
   }
 
@@ -116,6 +120,14 @@ class _FacadeEditorScreenState extends ConsumerState<FacadeEditorScreen> {
                       onGeneratePressed: () => _generateGrid(project.projectId, activeFacade.sideId),
                     ),
                     const SizedBox(height: 12),
+                    _FacadeStandingHeightCard(
+                      controller: _standingHeightController,
+                      onApplyPressed: () => _saveStandingHeight(
+                        projectId: project.projectId,
+                        facadeSideId: activeFacade.sideId,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     _FacadeGridCard(
                       projectId: project.projectId,
                       facade: activeFacade,
@@ -145,6 +157,7 @@ class _FacadeEditorScreenState extends ConsumerState<FacadeEditorScreen> {
     _sectionWidthController.text = sectionWidth.toStringAsFixed(2);
     _storeysController.text = '$storeyCount';
     _storeyHeightController.text = storeyHeight.toStringAsFixed(2);
+    _standingHeightController.text = facade.standingHeightM?.toStringAsFixed(2) ?? '';
   }
 
   int _defaultSections(FacadeDocument facade) {
@@ -184,10 +197,73 @@ class _FacadeEditorScreenState extends ConsumerState<FacadeEditorScreen> {
     _showMessage(result.message);
   }
 
+  Future<void> _saveStandingHeight({
+    required String projectId,
+    required String facadeSideId,
+  }) async {
+    final parseResult = parseFacadeStandingHeightInputM(_standingHeightController.text);
+    if (!parseResult.isValid) {
+      _showMessage('Ugyldig ståhøjde. Brug et positivt tal i meter.');
+      return;
+    }
+
+    final result = await ref.read(facadeStandingHeightControllerProvider).saveStandingHeight(
+          projectId: projectId,
+          facadeSideId: facadeSideId,
+          standingHeightM: parseResult.valueM,
+        );
+
+    if (!mounted) return;
+    ref.invalidate(activeProjectDocumentProvider);
+    _showMessage(result.message);
+  }
+
   void _showMessage(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+class _FacadeStandingHeightCard extends StatelessWidget {
+  const _FacadeStandingHeightCard({
+    required this.controller,
+    required this.onApplyPressed,
+  });
+
+  final TextEditingController controller;
+  final VoidCallback onApplyPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Ståhøjde', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            TextField(
+              controller: controller,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Standing height (m)',
+                hintText: 'Fx 3.20',
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: onApplyPressed,
+                child: const Text('Apply standing height'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -212,6 +288,14 @@ class _FacadeMetadataCard extends StatelessWidget {
             Text('Type: ${facade.sideType.jsonValue}'),
             Text('Eaves: ${facade.eavesHeightMm?.toString() ?? '-'} mm'),
             Text('Ridge: ${facade.ridgeHeightMm?.toString() ?? '-'} mm'),
+            Text(
+              'Standing height: ${facade.standingHeightM?.toStringAsFixed(2) ?? '-'} m',
+              key: const ValueKey('standing-height-label'),
+            ),
+            Text(
+              'Top zone: ${facade.standingHeightM == null ? '-' : facade.topZoneM.toStringAsFixed(2)} m',
+              key: const ValueKey('top-zone-label'),
+            ),
           ],
         ),
       ),
@@ -332,6 +416,8 @@ class _FacadeGridPainter extends CustomPainter {
   const _FacadeGridPainter({
     required this.sections,
     required this.storeys,
+    required this.standingHeightM,
+    required this.topZoneM,
     required this.lineColor,
     this.activeVerticalDividerIndex,
     this.activeHorizontalDividerIndex,
@@ -339,6 +425,8 @@ class _FacadeGridPainter extends CustomPainter {
 
   final List<FacadeSection> sections;
   final List<FacadeStorey> storeys;
+  final double? standingHeightM;
+  final double topZoneM;
   final Color lineColor;
   final int? activeVerticalDividerIndex;
   final int? activeHorizontalDividerIndex;
@@ -355,6 +443,10 @@ class _FacadeGridPainter extends CustomPainter {
     final activePaint = Paint()
       ..color = Colors.blue
       ..strokeWidth = 3;
+    final standingLinePaint = Paint()
+      ..color = Colors.orange
+      ..strokeWidth = 2;
+    final topZonePaint = Paint()..color = Colors.orange.withOpacity(0.14);
 
     canvas.drawRect(Offset.zero & size, borderPaint);
 
@@ -390,12 +482,32 @@ class _FacadeGridPainter extends CustomPainter {
         activeHorizontalDividerIndex == index ? activePaint : gridPaint,
       );
     }
+
+    final heightM = standingHeightM;
+    if (heightM == null || heightM <= 0 || topZoneM <= 0) {
+      return;
+    }
+
+    final lineY = (size.height - (heightM / totalStoreyHeight * size.height)).clamp(0.0, size.height);
+    final topBandHeight = (topZoneM / totalStoreyHeight * size.height).clamp(0.0, size.height);
+    final topBandTop = (lineY - topBandHeight).clamp(0.0, size.height);
+    final bandRect = Rect.fromLTRB(0, topBandTop, size.width, lineY);
+    if (bandRect.height > 0) {
+      canvas.drawRect(bandRect, topZonePaint);
+    }
+    canvas.drawLine(
+      Offset(0, lineY),
+      Offset(size.width, lineY),
+      standingLinePaint,
+    );
   }
 
   @override
   bool shouldRepaint(covariant _FacadeGridPainter oldDelegate) {
     return oldDelegate.sections != sections ||
         oldDelegate.storeys != storeys ||
+        oldDelegate.standingHeightM != standingHeightM ||
+        oldDelegate.topZoneM != topZoneM ||
         oldDelegate.lineColor != lineColor ||
         oldDelegate.activeVerticalDividerIndex != activeVerticalDividerIndex ||
         oldDelegate.activeHorizontalDividerIndex != activeHorizontalDividerIndex;
@@ -462,6 +574,8 @@ class _AdjustableFacadeGridState extends ConsumerState<_AdjustableFacadeGrid> {
             painter: _FacadeGridPainter(
               sections: _previewSections,
               storeys: _previewStoreys,
+              standingHeightM: widget.facade.standingHeightM,
+              topZoneM: widget.facade.topZoneM,
               lineColor: Theme.of(context).colorScheme.onSurface,
               activeVerticalDividerIndex:
                   _dragAxis == _GridDragAxis.vertical ? _activeDividerIndex : null,

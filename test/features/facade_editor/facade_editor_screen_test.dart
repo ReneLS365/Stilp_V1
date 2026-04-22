@@ -132,4 +132,84 @@ void main() {
     );
     expect(generatedStateText, findsOneWidget);
   });
+
+  testWidgets('applies standing height for selected facade and keeps other facade untouched', (
+    tester,
+  ) async {
+    final store = InMemoryProjectStore();
+    const projectId = 'project-standing-height';
+    await store.saveProject(
+      ProjectDocument.empty(
+        projectId: projectId,
+        taskType: 'Facade test',
+        now: DateTime.utc(2026, 4, 22, 10, 0),
+      ).copyWith(
+        facades: const [
+          FacadeDocument(
+            sideId: 'e1',
+            label: 'Side 1',
+            planEdgeId: 'e1',
+            sideOrder: 0,
+            edgeLengthMm: 2000,
+            sideType: PlanSideType.langside,
+            eavesHeightMm: 3200,
+            ridgeHeightMm: 4600,
+            standingHeightM: null,
+            topZoneM: 1,
+            sections: [FacadeSection(id: 'sec-1', widthM: 1.5)],
+            storeys: [FacadeStorey(id: 'st-1', heightM: 2.0, kind: FacadeStoreyKind.main)],
+            markers: [],
+          ),
+          FacadeDocument(
+            sideId: 'e2',
+            label: 'Side 2',
+            planEdgeId: 'e2',
+            sideOrder: 1,
+            edgeLengthMm: 1800,
+            sideType: PlanSideType.gavl,
+            eavesHeightMm: null,
+            ridgeHeightMm: null,
+            standingHeightM: null,
+            topZoneM: 1,
+            sections: [FacadeSection(id: 'sec-1', widthM: 1.5)],
+            storeys: [FacadeStorey(id: 'st-1', heightM: 2.0, kind: FacadeStoreyKind.main)],
+            markers: [],
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          localProjectStoreProvider.overrideWithValue(store),
+          projectSessionControllerProvider.overrideWith(
+            (ref) => ProjectSessionController()..openProject(projectId),
+          ),
+        ],
+        child: const MaterialApp(home: Scaffold(body: FacadeEditorScreen())),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Standing height: - m'), findsOneWidget);
+    expect(find.text('Top zone: - m'), findsOneWidget);
+    await tester.enterText(find.widgetWithText(TextField, 'Standing height (m)'), '3.20');
+    await tester.tap(find.widgetWithText(FilledButton, 'Apply standing height'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Standing height: 3.20 m'), findsOneWidget);
+    expect(find.text('Top zone: 1.00 m'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Side 2'));
+    await tester.pumpAndSettle();
+    expect(find.text('Standing height: - m'), findsOneWidget);
+    expect(find.text('Top zone: - m'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Side 1'));
+    await tester.pumpAndSettle();
+    expect(find.text('Standing height: 3.20 m'), findsOneWidget);
+    expect(find.text('Top zone: 1.00 m'), findsOneWidget);
+  });
 }
