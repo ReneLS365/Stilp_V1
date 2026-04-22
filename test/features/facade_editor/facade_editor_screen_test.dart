@@ -45,7 +45,7 @@ void main() {
             (ref) => ProjectSessionController()..openProject('project-empty-facades'),
           ),
         ],
-        child: const MaterialApp(home: FacadeEditorScreen()),
+        child: const MaterialApp(home: Scaffold(body: FacadeEditorScreen())),
       ),
     );
 
@@ -105,7 +105,7 @@ void main() {
             (ref) => ProjectSessionController()..openProject('project-with-facades'),
           ),
         ],
-        child: const MaterialApp(home: FacadeEditorScreen()),
+        child: const MaterialApp(home: Scaffold(body: FacadeEditorScreen())),
       ),
     );
 
