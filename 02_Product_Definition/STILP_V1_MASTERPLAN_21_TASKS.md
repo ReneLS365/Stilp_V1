@@ -48,11 +48,11 @@ Brug kun disse statustyper:
 ## Fremdrift
 - Total tasks: 21
 - Fase 0 setup: done
-- Done: 7
+- Done: 8
 - Active: 1
-- Planned: 13
+- Planned: 12
 - Aktuel fase: Fase 2
-- Aktuel fokus: T08
+- Aktuel fokus: T09
 
 ## Aktuel repo-status
 Repoet indeholder allerede:
@@ -72,7 +72,8 @@ Det betyder:
 - T05 er implementeret i kode med fuld projektmodel
 - T06 er implementeret med lokal fil-persistence
 - T07 er implementeret med plan-canvas, node-drag og lokal persistence
-- T08 er næste aktive task
+- T08 er implementeret med side-metadataredigering og persisted måldata
+- T09 er næste aktive task
 
 ---
 
@@ -275,7 +276,7 @@ Mål: brugbart output og basal robusthed.
 
 ## T08 — Side measurement and side type
 - Fase: 3
-- Status: active
+- Status: done
 - Mål: tilføje længde og type pr. side
 - Indhold:
   - side length
@@ -288,7 +289,7 @@ Mål: brugbart output og basal robusthed.
 
 ## T09 — Plan-to-facade mapping
 - Fase: 3
-- Status: planned
+- Status: active
 - Mål: omsætte planvisning til facadeobjekter
 - Indhold:
   - create facades from plan

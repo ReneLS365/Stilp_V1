@@ -37,6 +37,7 @@ class PlanViewController {
 
   final LocalProjectStore _store;
   final DateTime Function() _now;
+  Future<void> _pendingSideMetadataSave = Future<void>.value();
 
   Future<void> startRectangle(String projectId) async {
     await _saveUpdatedPlanView(projectId, (_) => _defaultRectangle());
@@ -76,9 +77,56 @@ class PlanViewController {
       return currentPlan.copyWith(
         enabled: true,
         nodes: nextNodes,
-        edges: _rebuildEdges(nextNodes),
+        edges: _rebuildEdges(nextNodes, previousEdges: currentPlan.edges),
       );
     });
+  }
+
+  Future<void> updateSideType({
+    required String projectId,
+    required String edgeId,
+    required PlanSideType sideType,
+  }) async {
+    await _enqueueSideMetadataSave(() {
+      return _saveUpdatedPlanView(projectId, (currentPlan) {
+        final nextEdges = currentPlan.edges
+            .map(
+              (edge) => edge.id == edgeId ? edge.copyWith(sideType: sideType) : edge,
+            )
+            .toList(growable: false);
+        return currentPlan.copyWith(edges: nextEdges);
+      });
+    });
+  }
+
+  Future<void> updateSideHeights({
+    required String projectId,
+    required String edgeId,
+    int? eavesHeightMm,
+    int? ridgeHeightMm,
+  }) async {
+    await _enqueueSideMetadataSave(() {
+      return _saveUpdatedPlanView(projectId, (currentPlan) {
+        final nextEdges = currentPlan.edges
+            .map(
+              (edge) => edge.id == edgeId
+                  ? edge.copyWith(
+                      eavesHeightMm: eavesHeightMm,
+                      ridgeHeightMm: ridgeHeightMm,
+                    )
+                  : edge,
+            )
+            .toList(growable: false);
+        return currentPlan.copyWith(edges: nextEdges);
+      });
+    });
+  }
+
+  Future<void> _enqueueSideMetadataSave(Future<void> Function() action) async {
+    _pendingSideMetadataSave = _pendingSideMetadataSave.catchError((_, __) {}).then(
+          (_) => action(),
+        );
+    await _pendingSideMetadataSave;
   }
 
   Future<void> _saveUpdatedPlanView(
@@ -113,22 +161,30 @@ class PlanViewController {
     );
   }
 
-  static List<PlanViewEdge> _rebuildEdges(List<PlanViewNode> nodes) {
+  static List<PlanViewEdge> _rebuildEdges(
+    List<PlanViewNode> nodes, {
+    List<PlanViewEdge> previousEdges = const [],
+  }) {
     if (nodes.length < 2) {
       return const [];
     }
 
+    final previousById = {for (final edge in previousEdges) edge.id: edge};
     final edges = <PlanViewEdge>[];
     for (var index = 0; index < nodes.length; index++) {
       final from = nodes[index];
       final to = nodes[(index + 1) % nodes.length];
+      final edgeId = 'e${index + 1}';
+      final previous = previousById[edgeId];
       edges.add(
         PlanViewEdge(
-          id: 'e${index + 1}',
+          id: edgeId,
           fromNodeId: from.id,
           toNodeId: to.id,
           lengthMm: _distanceMm(from, to),
-          sideType: PlanSideType.andet,
+          sideType: previous?.sideType ?? PlanSideType.andet,
+          eavesHeightMm: previous?.eavesHeightMm,
+          ridgeHeightMm: previous?.ridgeHeightMm,
         ),
       );
     }
