@@ -37,6 +37,7 @@ class PlanViewController {
 
   final LocalProjectStore _store;
   final DateTime Function() _now;
+  Future<void> _pendingSideMetadataSave = Future<void>.value();
 
   Future<void> startRectangle(String projectId) async {
     await _saveUpdatedPlanView(projectId, (_) => _defaultRectangle());
@@ -86,13 +87,15 @@ class PlanViewController {
     required String edgeId,
     required PlanSideType sideType,
   }) async {
-    await _saveUpdatedPlanView(projectId, (currentPlan) {
-      final nextEdges = currentPlan.edges
-          .map(
-            (edge) => edge.id == edgeId ? edge.copyWith(sideType: sideType) : edge,
-          )
-          .toList(growable: false);
-      return currentPlan.copyWith(edges: nextEdges);
+    await _enqueueSideMetadataSave(() {
+      return _saveUpdatedPlanView(projectId, (currentPlan) {
+        final nextEdges = currentPlan.edges
+            .map(
+              (edge) => edge.id == edgeId ? edge.copyWith(sideType: sideType) : edge,
+            )
+            .toList(growable: false);
+        return currentPlan.copyWith(edges: nextEdges);
+      });
     });
   }
 
@@ -102,19 +105,28 @@ class PlanViewController {
     int? eavesHeightMm,
     int? ridgeHeightMm,
   }) async {
-    await _saveUpdatedPlanView(projectId, (currentPlan) {
-      final nextEdges = currentPlan.edges
-          .map(
-            (edge) => edge.id == edgeId
-                ? edge.copyWith(
-                    eavesHeightMm: eavesHeightMm,
-                    ridgeHeightMm: ridgeHeightMm,
-                  )
-                : edge,
-          )
-          .toList(growable: false);
-      return currentPlan.copyWith(edges: nextEdges);
+    await _enqueueSideMetadataSave(() {
+      return _saveUpdatedPlanView(projectId, (currentPlan) {
+        final nextEdges = currentPlan.edges
+            .map(
+              (edge) => edge.id == edgeId
+                  ? edge.copyWith(
+                      eavesHeightMm: eavesHeightMm,
+                      ridgeHeightMm: ridgeHeightMm,
+                    )
+                  : edge,
+            )
+            .toList(growable: false);
+        return currentPlan.copyWith(edges: nextEdges);
+      });
     });
+  }
+
+  Future<void> _enqueueSideMetadataSave(Future<void> Function() action) async {
+    _pendingSideMetadataSave = _pendingSideMetadataSave.catchError((_, __) {}).then(
+          (_) => action(),
+        );
+    await _pendingSideMetadataSave;
   }
 
   Future<void> _saveUpdatedPlanView(

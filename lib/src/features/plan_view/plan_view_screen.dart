@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/state/app_shell_controller.dart';
 import '../../core/models/plan_side.dart';
 import '../../core/models/plan_view_data.dart';
+import 'height_input_parser.dart';
 import 'state/plan_view_controller.dart';
 
 class PlanViewScreen extends ConsumerStatefulWidget {
@@ -420,23 +421,31 @@ class _SideEditorRowState extends ConsumerState<_SideEditorRow> {
   }
 
   Future<void> _saveHeights() async {
+    final eavesParse = parseHeightInputMm(_eavesController.text);
+    final ridgeParse = parseHeightInputMm(_ridgeController.text);
+    if (!eavesParse.isValid || !ridgeParse.isValid) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Invalid height format. Use whole millimetres (example: 3200).',
+          ),
+        ),
+      );
+      return;
+    }
+
     final controller = ref.read(planViewControllerProvider);
     await controller.updateSideHeights(
       projectId: widget.projectId,
       edgeId: widget.edge.id,
-      eavesHeightMm: _parseMm(_eavesController.text),
-      ridgeHeightMm: _parseMm(_ridgeController.text),
+      eavesHeightMm: eavesParse.valueMm,
+      ridgeHeightMm: ridgeParse.valueMm,
     );
     ref.invalidate(activeProjectDocumentProvider);
     ref.invalidate(projectsProvider);
-  }
-
-  static int? _parseMm(String text) {
-    final trimmed = text.trim();
-    if (trimmed.isEmpty) {
-      return null;
-    }
-    return int.tryParse(trimmed);
   }
 
   static String _asInput(int? value) => value?.toString() ?? '';

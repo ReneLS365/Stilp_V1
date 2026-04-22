@@ -6,6 +6,7 @@ import 'package:stilp_v1/src/core/models/plan_side.dart';
 import 'package:stilp_v1/src/core/models/project_document.dart';
 import 'package:stilp_v1/src/data/projects/file_local_project_store.dart';
 import 'package:stilp_v1/src/data/projects/in_memory_project_store.dart';
+import 'package:stilp_v1/src/features/plan_view/height_input_parser.dart';
 import 'package:stilp_v1/src/features/plan_view/state/plan_view_controller.dart';
 
 void main() {
@@ -138,6 +139,89 @@ void main() {
       final edge = updated!.planView.edges.firstWhere((item) => item.id == 'e2');
       expect(edge.eavesHeightMm, isNull);
       expect(edge.ridgeHeightMm, isNull);
+    });
+
+    test('concurrent side metadata saves preserve both updates', () async {
+      final store = InMemoryProjectStore();
+      const projectId = 'concurrent-side-save-project';
+      await store.saveProject(
+        ProjectDocument.empty(
+          projectId: projectId,
+          taskType: 'Plan test',
+          now: DateTime.utc(2026, 4, 22, 10, 0),
+        ),
+      );
+
+      final controller = PlanViewController(
+        store: store,
+        now: () => DateTime.utc(2026, 4, 22, 10, 11),
+      );
+
+      await controller.startRectangle(projectId);
+      final futures = <Future<void>>[
+        controller.updateSideType(
+          projectId: projectId,
+          edgeId: 'e1',
+          sideType: PlanSideType.gavl,
+        ),
+        controller.updateSideHeights(
+          projectId: projectId,
+          edgeId: 'e2',
+          eavesHeightMm: 3200,
+          ridgeHeightMm: 4700,
+        ),
+      ];
+      await Future.wait(futures);
+
+      final updated = await store.getProject(projectId);
+      final e1 = updated!.planView.edges.firstWhere((item) => item.id == 'e1');
+      final e2 = updated.planView.edges.firstWhere((item) => item.id == 'e2');
+      expect(e1.sideType, PlanSideType.gavl);
+      expect(e2.eavesHeightMm, 3200);
+      expect(e2.ridgeHeightMm, 4700);
+    });
+
+    test('invalid non-empty height input does not clear existing saved value', () async {
+      final store = InMemoryProjectStore();
+      const projectId = 'invalid-height-input-project';
+      await store.saveProject(
+        ProjectDocument.empty(
+          projectId: projectId,
+          taskType: 'Plan test',
+          now: DateTime.utc(2026, 4, 22, 10, 0),
+        ),
+      );
+
+      final controller = PlanViewController(
+        store: store,
+        now: () => DateTime.utc(2026, 4, 22, 10, 12),
+      );
+
+      await controller.startRectangle(projectId);
+      await controller.updateSideHeights(
+        projectId: projectId,
+        edgeId: 'e1',
+        eavesHeightMm: 3200,
+        ridgeHeightMm: 4500,
+      );
+
+      final invalidEaves = parseHeightInputMm('3,200');
+      final invalidRidge = parseHeightInputMm('3200mm');
+      if (invalidEaves.isValid && invalidRidge.isValid) {
+        await controller.updateSideHeights(
+          projectId: projectId,
+          edgeId: 'e1',
+          eavesHeightMm: invalidEaves.valueMm,
+          ridgeHeightMm: invalidRidge.valueMm,
+        );
+      }
+
+      final updated = await store.getProject(projectId);
+      final edge = updated!.planView.edges.firstWhere((item) => item.id == 'e1');
+      expect(invalidEaves.isValid, isFalse);
+      expect(invalidRidge.isValid, isFalse);
+      expect(edge.eavesHeightMm, 3200);
+      expect(edge.ridgeHeightMm, 4500);
     });
 
     test('clearPlan removes nodes and edges again', () async {
