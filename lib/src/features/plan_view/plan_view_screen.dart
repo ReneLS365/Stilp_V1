@@ -16,6 +16,7 @@ class _PlanViewScreenState extends ConsumerState<PlanViewScreen> {
   String? _draggingNodeId;
   List<PlanViewNode>? _liveNodes;
   bool _isRunningAction = false;
+  Future<void> _pendingMoveWrite = Future<void>.value();
 
   @override
   Widget build(BuildContext context) {
@@ -93,12 +94,7 @@ class _PlanViewScreenState extends ConsumerState<PlanViewScreen> {
                                 project.projectId,
                                 canvasSize,
                               ),
-                              onPanEnd: (_) {
-                                setState(() {
-                                  _draggingNodeId = null;
-                                });
-                                ref.invalidate(activeProjectDocumentProvider);
-                              },
+                              onPanEnd: (_) => _onPanEnd(),
                               child: CustomPaint(
                                 painter: _PlanCanvasPainter(
                                   nodes: nodes,
@@ -168,11 +164,11 @@ class _PlanViewScreenState extends ConsumerState<PlanViewScreen> {
     });
   }
 
-  Future<void> _onPanUpdate(
+  void _onPanUpdate(
     Offset pointer,
     String projectId,
     Size canvasSize,
-  ) async {
+  ) {
     final draggingNodeId = _draggingNodeId;
     if (draggingNodeId == null) {
       return;
@@ -194,12 +190,33 @@ class _PlanViewScreenState extends ConsumerState<PlanViewScreen> {
           .toList(growable: false);
     });
 
-    await ref.read(planViewControllerProvider).moveNode(
-          projectId: projectId,
-          nodeId: draggingNodeId,
-          nextPosition: clamped,
-          canvasSize: canvasSize,
+    _pendingMoveWrite = _pendingMoveWrite
+        .catchError((_, __) {})
+        .then(
+          (_) => ref.read(planViewControllerProvider).moveNode(
+                projectId: projectId,
+                nodeId: draggingNodeId,
+                nextPosition: clamped,
+                canvasSize: canvasSize,
+              ),
         );
+  }
+
+  Future<void> _onPanEnd() async {
+    setState(() {
+      _draggingNodeId = null;
+    });
+
+    await _pendingMoveWrite;
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _liveNodes = null;
+    });
+    ref.invalidate(activeProjectDocumentProvider);
   }
 }
 
