@@ -350,7 +350,7 @@ class _SideEditorRowState extends ConsumerState<_SideEditorRow> {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<PlanSideType>(
-          value: widget.edge.sideType,
+          initialValue: widget.edge.sideType,
           decoration: const InputDecoration(
             labelText: 'Side type',
             border: OutlineInputBorder(),
