@@ -9,6 +9,7 @@ import '../../core/models/facade_storey.dart';
 import '../../core/models/plan_side.dart';
 import '../plan_view/state/plan_view_controller.dart';
 import '../project_session/state/project_session_controller.dart';
+import 'state/facade_grid_adjustment_controller.dart';
 import 'state/facade_grid_generation_controller.dart';
 
 class FacadeEditorScreen extends ConsumerStatefulWidget {
@@ -115,7 +116,10 @@ class _FacadeEditorScreenState extends ConsumerState<FacadeEditorScreen> {
                       onGeneratePressed: () => _generateGrid(project.projectId, activeFacade.sideId),
                     ),
                     const SizedBox(height: 12),
-                    _FacadeGridCard(facade: activeFacade),
+                    _FacadeGridCard(
+                      projectId: project.projectId,
+                      facade: activeFacade,
+                    ),
                   ],
                 ),
               ),
@@ -276,8 +280,12 @@ class _FacadeGenerationForm extends StatelessWidget {
 }
 
 class _FacadeGridCard extends StatelessWidget {
-  const _FacadeGridCard({required this.facade});
+  const _FacadeGridCard({
+    required this.projectId,
+    required this.facade,
+  });
 
+  final String projectId;
   final FacadeDocument facade;
 
   @override
@@ -299,18 +307,16 @@ class _FacadeGridCard extends StatelessWidget {
               const SizedBox(height: 8),
               AspectRatio(
                 aspectRatio: 1.6,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerLow,
-                    border: Border.all(color: Theme.of(context).colorScheme.outline),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: CustomPaint(
-                    painter: _FacadeGridPainter(
-                      sections: facade.sections,
-                      storeys: facade.storeys,
-                      lineColor: Theme.of(context).colorScheme.onSurface,
+                child: _AdjustableFacadeGrid(
+                  projectId: projectId,
+                  facade: facade,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerLow,
+                      border: Border.all(color: Theme.of(context).colorScheme.outline),
+                      borderRadius: BorderRadius.circular(8),
                     ),
+                    child: const SizedBox.expand(),
                   ),
                 ),
               ),
@@ -327,11 +333,15 @@ class _FacadeGridPainter extends CustomPainter {
     required this.sections,
     required this.storeys,
     required this.lineColor,
+    this.activeVerticalDividerIndex,
+    this.activeHorizontalDividerIndex,
   });
 
   final List<FacadeSection> sections;
   final List<FacadeStorey> storeys;
   final Color lineColor;
+  final int? activeVerticalDividerIndex;
+  final int? activeHorizontalDividerIndex;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -342,6 +352,9 @@ class _FacadeGridPainter extends CustomPainter {
     final gridPaint = Paint()
       ..color = lineColor
       ..strokeWidth = 1;
+    final activePaint = Paint()
+      ..color = Colors.blue
+      ..strokeWidth = 3;
 
     canvas.drawRect(Offset.zero & size, borderPaint);
 
@@ -361,13 +374,21 @@ class _FacadeGridPainter extends CustomPainter {
     var x = 0.0;
     for (var index = 0; index < sections.length - 1; index++) {
       x += sections[index].widthM / totalSectionWidth * size.width;
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(x, size.height),
+        activeVerticalDividerIndex == index ? activePaint : gridPaint,
+      );
     }
 
     var y = size.height;
     for (var index = 0; index < storeys.length - 1; index++) {
       y -= storeys[index].heightM / totalStoreyHeight * size.height;
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(size.width, y),
+        activeHorizontalDividerIndex == index ? activePaint : gridPaint,
+      );
     }
   }
 
@@ -375,6 +396,205 @@ class _FacadeGridPainter extends CustomPainter {
   bool shouldRepaint(covariant _FacadeGridPainter oldDelegate) {
     return oldDelegate.sections != sections ||
         oldDelegate.storeys != storeys ||
-        oldDelegate.lineColor != lineColor;
+        oldDelegate.lineColor != lineColor ||
+        oldDelegate.activeVerticalDividerIndex != activeVerticalDividerIndex ||
+        oldDelegate.activeHorizontalDividerIndex != activeHorizontalDividerIndex;
+  }
+}
+
+enum _GridDragAxis { vertical, horizontal }
+
+class _AdjustableFacadeGrid extends ConsumerStatefulWidget {
+  const _AdjustableFacadeGrid({
+    required this.projectId,
+    required this.facade,
+    required this.child,
+  });
+
+  final String projectId;
+  final FacadeDocument facade;
+  final Widget child;
+
+  @override
+  ConsumerState<_AdjustableFacadeGrid> createState() => _AdjustableFacadeGridState();
+}
+
+class _AdjustableFacadeGridState extends ConsumerState<_AdjustableFacadeGrid> {
+  static const double _hitSlopPx = 20;
+
+  late List<FacadeSection> _previewSections;
+  late List<FacadeStorey> _previewStoreys;
+  _GridDragAxis? _dragAxis;
+  int? _activeDividerIndex;
+  Offset? _lastLocalPosition;
+
+  @override
+  void initState() {
+    super.initState();
+    _previewSections = widget.facade.sections;
+    _previewStoreys = widget.facade.storeys;
+  }
+
+  @override
+  void didUpdateWidget(covariant _AdjustableFacadeGrid oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.facade.sideId != oldWidget.facade.sideId ||
+        _dragAxis == null &&
+            (widget.facade.sections != oldWidget.facade.sections ||
+                widget.facade.storeys != oldWidget.facade.storeys)) {
+      _previewSections = widget.facade.sections;
+      _previewStoreys = widget.facade.storeys;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = Size(constraints.maxWidth, constraints.maxHeight);
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onPanStart: (details) => _onPanStart(details.localPosition, size),
+          onPanUpdate: (details) => _onPanUpdate(details.localPosition, size),
+          onPanEnd: (_) => _onPanEnd(),
+          onPanCancel: _onPanCancel,
+          child: CustomPaint(
+            painter: _FacadeGridPainter(
+              sections: _previewSections,
+              storeys: _previewStoreys,
+              lineColor: Theme.of(context).colorScheme.onSurface,
+              activeVerticalDividerIndex:
+                  _dragAxis == _GridDragAxis.vertical ? _activeDividerIndex : null,
+              activeHorizontalDividerIndex:
+                  _dragAxis == _GridDragAxis.horizontal ? _activeDividerIndex : null,
+            ),
+            child: widget.child,
+          ),
+        );
+      },
+    );
+  }
+
+  void _onPanStart(Offset localPosition, Size size) {
+    final verticalIndex = _findNearestVerticalDivider(localPosition.dx, size.width);
+    final horizontalIndex = _findNearestHorizontalDivider(localPosition.dy, size.height);
+
+    if (verticalIndex != null) {
+      setState(() {
+        _dragAxis = _GridDragAxis.vertical;
+        _activeDividerIndex = verticalIndex;
+        _lastLocalPosition = localPosition;
+      });
+      return;
+    }
+
+    if (horizontalIndex != null) {
+      setState(() {
+        _dragAxis = _GridDragAxis.horizontal;
+        _activeDividerIndex = horizontalIndex;
+        _lastLocalPosition = localPosition;
+      });
+    }
+  }
+
+  void _onPanUpdate(Offset localPosition, Size size) {
+    if (_dragAxis == null || _activeDividerIndex == null || _lastLocalPosition == null) {
+      return;
+    }
+
+    setState(() {
+      if (_dragAxis == _GridDragAxis.vertical) {
+        final totalWidth = _previewSections.fold<double>(0, (sum, section) => sum + section.widthM);
+        if (totalWidth <= 0 || size.width <= 0) return;
+        final deltaX = localPosition.dx - _lastLocalPosition!.dx;
+        final deltaM = deltaX / size.width * totalWidth;
+        _previewSections = FacadeGridAdjustmentController.resizeSectionsAtDivider(
+          sections: _previewSections,
+          dividerIndex: _activeDividerIndex!,
+          deltaM: deltaM,
+        );
+      } else {
+        final totalHeight = _previewStoreys.fold<double>(0, (sum, storey) => sum + storey.heightM);
+        if (totalHeight <= 0 || size.height <= 0) return;
+        final deltaY = _lastLocalPosition!.dy - localPosition.dy;
+        final deltaM = deltaY / size.height * totalHeight;
+        _previewStoreys = FacadeGridAdjustmentController.resizeStoreysAtDivider(
+          storeys: _previewStoreys,
+          dividerIndex: _activeDividerIndex!,
+          deltaM: deltaM,
+        );
+      }
+      _lastLocalPosition = localPosition;
+    });
+  }
+
+  Future<void> _onPanEnd() async {
+    final hadDrag = _dragAxis != null;
+    final dragSideId = widget.facade.sideId;
+    _resetDragState();
+    if (!hadDrag) return;
+
+    final result = await ref.read(facadeGridAdjustmentControllerProvider).saveAdjustedGrid(
+          projectId: widget.projectId,
+          facadeSideId: dragSideId,
+          sections: _previewSections,
+          storeys: _previewStoreys,
+        );
+
+    if (!mounted) return;
+    ref.invalidate(activeProjectDocumentProvider);
+    if (!result.isSuccess) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(result.message)));
+    }
+  }
+
+  void _onPanCancel() {
+    _resetDragState();
+    setState(() {
+      _previewSections = widget.facade.sections;
+      _previewStoreys = widget.facade.storeys;
+    });
+  }
+
+  void _resetDragState() {
+    setState(() {
+      _dragAxis = null;
+      _activeDividerIndex = null;
+      _lastLocalPosition = null;
+    });
+  }
+
+  int? _findNearestVerticalDivider(double localDx, double width) {
+    if (_previewSections.length < 2 || width <= 0) return null;
+
+    final totalWidth = _previewSections.fold<double>(0, (sum, section) => sum + section.widthM);
+    if (totalWidth <= 0) return null;
+
+    var x = 0.0;
+    for (var index = 0; index < _previewSections.length - 1; index++) {
+      x += _previewSections[index].widthM / totalWidth * width;
+      if ((localDx - x).abs() <= _hitSlopPx) {
+        return index;
+      }
+    }
+    return null;
+  }
+
+  int? _findNearestHorizontalDivider(double localDy, double height) {
+    if (_previewStoreys.length < 2 || height <= 0) return null;
+
+    final totalHeight = _previewStoreys.fold<double>(0, (sum, storey) => sum + storey.heightM);
+    if (totalHeight <= 0) return null;
+
+    var y = height;
+    for (var index = 0; index < _previewStoreys.length - 1; index++) {
+      y -= _previewStoreys[index].heightM / totalHeight * height;
+      if ((localDy - y).abs() <= _hitSlopPx) {
+        return index;
+      }
+    }
+    return null;
   }
 }
