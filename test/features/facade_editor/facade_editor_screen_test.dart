@@ -115,12 +115,25 @@ void main() {
 
     expect(find.text('Facader (2)'), findsOneWidget);
     expect(find.text('Plan edge: e1'), findsOneWidget);
-    expect(find.text('No grid generated yet for this facade side.'), findsOneWidget);
+
+    final emptyStateText = find.text('No grid generated yet for this facade side.');
+    await tester.scrollUntilVisible(
+      emptyStateText,
+      200,
+      scrollable: find.byType(ListView).last,
+    );
+    expect(emptyStateText, findsOneWidget);
 
     await tester.tap(find.widgetWithText(ChoiceChip, 'Side 2'));
     await tester.pumpAndSettle();
 
     expect(find.text('Plan edge: e2'), findsOneWidget);
-    expect(find.text('1 sections · 1 storeys'), findsOneWidget);
+    final generatedStateText = find.text('1 sections · 1 storeys');
+    await tester.scrollUntilVisible(
+      generatedStateText,
+      200,
+      scrollable: find.byType(ListView).last,
+    );
+    expect(generatedStateText, findsOneWidget);
   });
 }
