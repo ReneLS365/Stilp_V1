@@ -48,11 +48,11 @@ Brug kun disse statustyper:
 ## Fremdrift
 - Total tasks: 21
 - Fase 0 setup: done
-- Done: 9
+- Done: 10
 - Active: 1
-- Planned: 11
-- Aktuel fase: Fase 3
-- Aktuel fokus: T10
+- Planned: 10
+- Aktuel fase: Fase 4
+- Aktuel fokus: T11
 
 ## Aktuel repo-status
 Repoet indeholder allerede:
@@ -74,7 +74,8 @@ Det betyder:
 - T07 er implementeret med plan-canvas, node-drag og lokal persistence
 - T08 er implementeret med side-metadataredigering og persisted måldata
 - T09 er implementeret med plan-til-facade mapping, labels og persistens
-- T10 er næste aktive task
+- T10 er implementeret med facadegrid-generering, visning og persistens
+- T11 er næste aktive task
 
 ---
 
@@ -302,7 +303,7 @@ Mål: brugbart output og basal robusthed.
 
 ## T10 — Facade grid generation
 - Fase: 4
-- Status: active
+- Status: done
 - Mål: generere facadegrid hurtigt
 - Indhold:
   - number of sections
@@ -315,7 +316,7 @@ Mål: brugbart output og basal robusthed.
 
 ## T11 — Direct line adjustment
 - Fase: 4
-- Status: planned
+- Status: active
 - Mål: justere grid direkte med fingeren
 - Indhold:
   - drag vertical lines

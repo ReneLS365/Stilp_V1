@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stilp_v1/src/app/state/app_shell_controller.dart';
 import 'package:stilp_v1/src/core/models/facade_document.dart';
+import 'package:stilp_v1/src/core/models/facade_section.dart';
+import 'package:stilp_v1/src/core/models/facade_storey.dart';
 import 'package:stilp_v1/src/core/models/plan_side.dart';
 import 'package:stilp_v1/src/core/models/plan_view_data.dart';
 import 'package:stilp_v1/src/core/models/project_document.dart';
@@ -54,7 +56,7 @@ void main() {
     expect(find.textContaining('Ingen facader endnu'), findsOneWidget);
   });
 
-  testWidgets('shows generated facades list and details', (tester) async {
+  testWidgets('shows empty and generated grid states', (tester) async {
     final store = InMemoryProjectStore();
     await store.saveProject(
       ProjectDocument.empty(
@@ -89,8 +91,8 @@ void main() {
             ridgeHeightMm: null,
             standingHeightM: null,
             topZoneM: 1,
-            sections: [],
-            storeys: [],
+            sections: [FacadeSection(id: 'sec-1', widthM: 1.5)],
+            storeys: [FacadeStorey(id: 'st-1', heightM: 2.0, kind: FacadeStoreyKind.main)],
             markers: [],
           ),
         ],
@@ -112,8 +114,22 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Facader (2)'), findsOneWidget);
-    expect(find.text('Side 1'), findsWidgets);
     expect(find.text('Plan edge: e1'), findsOneWidget);
-    expect(find.text('Length: 2.00 m'), findsOneWidget);
+
+    final emptyStateText = find.text(
+      'No grid generated yet for this facade side.',
+      skipOffstage: false,
+    );
+    expect(emptyStateText, findsOneWidget);
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Side 2'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Plan edge: e2'), findsOneWidget);
+    final generatedStateText = find.text(
+      '1 sections · 1 storeys',
+      skipOffstage: false,
+    );
+    expect(generatedStateText, findsOneWidget);
   });
 }
