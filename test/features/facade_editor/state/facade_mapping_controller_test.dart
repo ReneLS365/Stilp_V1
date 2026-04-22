@@ -162,7 +162,7 @@ void main() {
               ),
             ],
           ),
-          facades: const [
+          facades: [
             FacadeDocument.emptyForSide(sideId: 'e1', label: 'Old side'),
             FacadeDocument.emptyForSide(sideId: 'e2', label: 'Current side'),
           ],
