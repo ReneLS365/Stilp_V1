@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/facade_document.dart';
 import '../../core/models/facade_section.dart';
 import '../../core/models/facade_storey.dart';
+import '../../core/models/plan_side.dart';
 import '../plan_view/state/plan_view_controller.dart';
 import '../project_session/state/project_session_controller.dart';
 import 'state/facade_grid_generation_controller.dart';
@@ -334,11 +335,15 @@ class _FacadeGridPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
+    final borderPaint = Paint()
+      ..color = lineColor
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke;
+    final gridPaint = Paint()
       ..color = lineColor
       ..strokeWidth = 1;
 
-    canvas.drawRect(Offset.zero & size, paint);
+    canvas.drawRect(Offset.zero & size, borderPaint);
 
     final totalSectionWidth = sections.fold<double>(
       0,
@@ -356,13 +361,13 @@ class _FacadeGridPainter extends CustomPainter {
     var x = 0.0;
     for (var index = 0; index < sections.length - 1; index++) {
       x += sections[index].widthM / totalSectionWidth * size.width;
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
     }
 
     var y = size.height;
     for (var index = 0; index < storeys.length - 1; index++) {
       y -= storeys[index].heightM / totalStoreyHeight * size.height;
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
   }
 
