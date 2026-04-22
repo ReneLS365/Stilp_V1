@@ -77,6 +77,7 @@ class _PlanViewScreenState extends ConsumerState<PlanViewScreen> {
                     onPressed: _isRunningAction
                         ? null
                         : () => _runAction(() async {
+                              await _pendingMoveWrite.catchError((_, __) {});
                               final result = await ref
                                   .read(facadeMappingControllerProvider)
                                   .mapFromPlan(project.projectId);
