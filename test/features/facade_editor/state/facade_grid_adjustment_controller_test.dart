@@ -6,8 +6,10 @@ import 'package:stilp_v1/src/core/models/facade_section.dart';
 import 'package:stilp_v1/src/core/models/facade_storey.dart';
 import 'package:stilp_v1/src/core/models/plan_side.dart';
 import 'package:stilp_v1/src/core/models/project_document.dart';
+import 'package:stilp_v1/src/core/models/project_summary.dart';
 import 'package:stilp_v1/src/data/projects/file_local_project_store.dart';
 import 'package:stilp_v1/src/data/projects/in_memory_project_store.dart';
+import 'package:stilp_v1/src/data/projects/local_project_store.dart';
 import 'package:stilp_v1/src/features/facade_editor/state/facade_grid_adjustment_controller.dart';
 
 void main() {
@@ -108,6 +110,56 @@ void main() {
       expect(clampedStoreys[1].heightM, closeTo(0.7, 0.0001));
     });
 
+    test('resizing sections with infeasible clamp bounds does not throw and remains unchanged', () {
+      final sections = const [
+        FacadeSection(id: 's1', widthM: 0.1),
+        FacadeSection(id: 's2', widthM: 0.1),
+      ];
+
+      expect(
+        () => FacadeGridAdjustmentController.resizeSectionsAtDivider(
+          sections: sections,
+          dividerIndex: 0,
+          deltaM: 0.05,
+        ),
+        returnsNormally,
+      );
+
+      final updated = FacadeGridAdjustmentController.resizeSectionsAtDivider(
+        sections: sections,
+        dividerIndex: 0,
+        deltaM: 0.05,
+      );
+      expect(updated, same(sections));
+      expect(updated[0].widthM, 0.1);
+      expect(updated[1].widthM, 0.1);
+    });
+
+    test('resizing storeys with infeasible clamp bounds does not throw and remains unchanged', () {
+      final storeys = const [
+        FacadeStorey(id: 'st1', heightM: 0.1, kind: FacadeStoreyKind.main),
+        FacadeStorey(id: 'st2', heightM: 0.1, kind: FacadeStoreyKind.main),
+      ];
+
+      expect(
+        () => FacadeGridAdjustmentController.resizeStoreysAtDivider(
+          storeys: storeys,
+          dividerIndex: 0,
+          deltaM: -0.05,
+        ),
+        returnsNormally,
+      );
+
+      final updated = FacadeGridAdjustmentController.resizeStoreysAtDivider(
+        storeys: storeys,
+        dividerIndex: 0,
+        deltaM: -0.05,
+      );
+      expect(updated, same(storeys));
+      expect(updated[0].heightM, 0.1);
+      expect(updated[1].heightM, 0.1);
+    });
+
     test('persisted facade reload restores adjusted dimensions', () async {
       final tempRoot = await Directory.systemTemp.createTemp('stilp_adjust_grid_');
       addTearDown(() async {
@@ -181,7 +233,89 @@ void main() {
       expect(facade2.sections.map((section) => section.widthM), [1.0, 1.0]);
       expect(facade2.storeys.map((storey) => storey.heightM), [2.0, 2.0]);
     });
+
+    test('overlapping saves are serialized and final state keeps latest adjustment', () async {
+      const projectId = 'adjust-serialized-project';
+      final store = _ControlledSaveProjectStore(_project(projectId));
+      final controller = FacadeGridAdjustmentController(
+        store: store,
+        now: () => DateTime.utc(2026, 4, 22, 12, 0),
+      );
+
+      final firstSave = controller.saveAdjustedGrid(
+        projectId: projectId,
+        facadeSideId: 'e1',
+        sections: const [
+          FacadeSection(id: 's1', widthM: 1.3),
+          FacadeSection(id: 's2', widthM: 0.7),
+        ],
+        storeys: const [
+          FacadeStorey(id: 'st1', heightM: 2.3, kind: FacadeStoreyKind.main),
+          FacadeStorey(id: 'st2', heightM: 1.7, kind: FacadeStoreyKind.main),
+        ],
+      );
+      final secondSave = controller.saveAdjustedGrid(
+        projectId: projectId,
+        facadeSideId: 'e1',
+        sections: const [
+          FacadeSection(id: 's1', widthM: 1.6),
+          FacadeSection(id: 's2', widthM: 0.4),
+        ],
+        storeys: const [
+          FacadeStorey(id: 'st1', heightM: 2.6, kind: FacadeStoreyKind.main),
+          FacadeStorey(id: 'st2', heightM: 1.4, kind: FacadeStoreyKind.main),
+        ],
+      );
+
+      await Future<void>.delayed(Duration.zero);
+      store.releaseSave(1);
+      store.releaseSave(0);
+
+      await Future.wait([firstSave, secondSave]);
+
+      final reloaded = await store.getProject(projectId);
+      final facade = reloaded!.facades.firstWhere((value) => value.sideId == 'e1');
+      expect(facade.sections.map((section) => section.widthM), [1.6, 0.4]);
+      expect(facade.storeys.map((storey) => storey.heightM), [2.6, 1.4]);
+    });
   });
+}
+
+class _ControlledSaveProjectStore implements LocalProjectStore {
+  _ControlledSaveProjectStore(this._project);
+
+  ProjectDocument _project;
+  final List<Completer<void>> _saveGate = [Completer<void>(), Completer<void>()];
+  int _saveIndex = 0;
+
+  void releaseSave(int index) {
+    if (index < 0 || index >= _saveGate.length) return;
+    if (!_saveGate[index].isCompleted) {
+      _saveGate[index].complete();
+    }
+  }
+
+  @override
+  Future<void> deleteProject(String projectId) async {}
+
+  @override
+  Future<ProjectDocument?> getProject(String projectId) async {
+    if (_project.projectId != projectId) return null;
+    return _project;
+  }
+
+  @override
+  Future<List<ProjectSummary>> listProjects() async => const [];
+
+  @override
+  Future<void> saveProject(ProjectDocument project) async {
+    final currentIndex = _saveIndex;
+    _saveIndex += 1;
+    if (currentIndex < _saveGate.length) {
+      await _saveGate[currentIndex].future;
+    }
+    _project = project;
+  }
 }
 
 ProjectDocument _project(String projectId) {

@@ -35,6 +35,7 @@ class FacadeGridAdjustmentController {
 
   final LocalProjectStore _store;
   final DateTime Function() _now;
+  Future<void> _pendingSave = Future<void>.value();
 
   static List<FacadeSection> resizeSectionsAtDivider({
     required List<FacadeSection> sections,
@@ -51,6 +52,9 @@ class FacadeGridAdjustmentController {
 
     final minDelta = minWidthM - left.widthM;
     final maxDelta = right.widthM - minWidthM;
+    if (minDelta > maxDelta) {
+      return sections;
+    }
     final clampedDelta = deltaM.clamp(minDelta, maxDelta).toDouble();
 
     final updated = [...sections];
@@ -74,6 +78,9 @@ class FacadeGridAdjustmentController {
 
     final minDelta = minHeightM - top.heightM;
     final maxDelta = bottom.heightM - minHeightM;
+    if (minDelta > maxDelta) {
+      return storeys;
+    }
     final clampedDelta = deltaM.clamp(minDelta, maxDelta).toDouble();
 
     final updated = [...storeys];
@@ -83,6 +90,24 @@ class FacadeGridAdjustmentController {
   }
 
   Future<FacadeGridAdjustmentResult> saveAdjustedGrid({
+    required String projectId,
+    required String facadeSideId,
+    required List<FacadeSection> sections,
+    required List<FacadeStorey> storeys,
+  }) async {
+    final saveOperation = _pendingSave.then((_) {
+      return _saveAdjustedGridInternal(
+        projectId: projectId,
+        facadeSideId: facadeSideId,
+        sections: sections,
+        storeys: storeys,
+      );
+    });
+    _pendingSave = saveOperation.then<void>((_) {}, onError: (_, __) {});
+    return saveOperation;
+  }
+
+  Future<FacadeGridAdjustmentResult> _saveAdjustedGridInternal({
     required String projectId,
     required String facadeSideId,
     required List<FacadeSection> sections,
