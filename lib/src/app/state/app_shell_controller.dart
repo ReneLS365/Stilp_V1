@@ -1,11 +1,20 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../core/models/project_summary.dart';
+import '../../data/projects/file_local_project_store.dart';
 import '../../data/projects/local_project_store.dart';
 import 'app_shell_state.dart';
 
 final localProjectStoreProvider = Provider<LocalProjectStore>((ref) {
-  return InMemoryProjectStore();
+  return FileLocalProjectStore.fromDirectoryResolver(
+    resolveProjectsDirectory: () async {
+      final documentsDirectory = await getApplicationDocumentsDirectory();
+      return Directory('${documentsDirectory.path}/stilp/projects');
+    },
+  );
 });
 
 final projectsProvider = FutureProvider<List<ProjectSummary>>((ref) async {
