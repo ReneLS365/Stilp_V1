@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/state/app_shell_controller.dart';
 import '../../core/models/plan_side.dart';
 import '../../core/models/plan_view_data.dart';
+import '../facade_editor/state/facade_mapping_controller.dart';
 import 'height_input_parser.dart';
 import 'state/plan_view_controller.dart';
 
@@ -71,6 +72,28 @@ class _PlanViewScreenState extends ConsumerState<PlanViewScreen> {
                             }),
                     icon: const Icon(Icons.delete_outline),
                     label: const Text('Clear plan'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _isRunningAction
+                        ? null
+                        : () => _runAction(() async {
+                              await _pendingMoveWrite.catchError((_, __) {});
+                              final result = await ref
+                                  .read(facadeMappingControllerProvider)
+                                  .mapFromPlan(project.projectId);
+                              if (!context.mounted) {
+                                return;
+                              }
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(result.message)),
+                              );
+                              if (result.isSuccess) {
+                                ref.invalidate(activeProjectDocumentProvider);
+                                ref.invalidate(projectsProvider);
+                              }
+                            }),
+                    icon: const Icon(Icons.sync_alt_outlined),
+                    label: const Text('Update facades from plan'),
                   ),
                 ],
               ),

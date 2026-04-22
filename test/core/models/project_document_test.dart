@@ -105,6 +105,12 @@ void main() {
         FacadeDocument(
           sideId: 'side-a',
           label: 'Side A',
+          planEdgeId: 'e1',
+          sideOrder: 0,
+          edgeLengthMm: 12000,
+          sideType: PlanSideType.gavl,
+          eavesHeightMm: 3200,
+          ridgeHeightMm: 4600,
           standingHeightM: 6.0,
           topZoneM: 1.0,
           sections: [FacadeSection(id: 'section-1', widthM: 2.57)],
