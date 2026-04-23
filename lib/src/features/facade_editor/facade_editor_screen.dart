@@ -111,32 +111,39 @@ class _FacadeEditorScreenState extends ConsumerState<FacadeEditorScreen> {
                 child: ListView(
                   key: const ValueKey('facade-editor-vertical-scroll'),
                   children: [
-                    Column(
-                      key: const ValueKey('standing-height-card'),
-                      children: [
-                        _FacadeMetadataCard(facade: activeFacade),
-                        const SizedBox(height: 12),
-                        _FacadeGenerationForm(
-                          sectionsController: _sectionsController,
-                          sectionWidthController: _sectionWidthController,
-                          storeysController: _storeysController,
-                          storeyHeightController: _storeyHeightController,
-                          onGeneratePressed: () => _generateGrid(project.projectId, activeFacade.sideId),
-                        ),
-                        const SizedBox(height: 12),
-                        _FacadeStandingHeightCard(
-                          controller: _standingHeightController,
-                          onApplyPressed: () => _saveStandingHeight(
-                            projectId: project.projectId,
-                            facadeSideId: activeFacade.sideId,
-                          ),
-                        ),
-                      ],
+                    KeyedSubtree(
+                      key: const ValueKey('facade-metadata-card'),
+                      child: _FacadeMetadataCard(facade: activeFacade),
                     ),
                     const SizedBox(height: 12),
-                    _FacadeGridCard(
-                      projectId: project.projectId,
-                      facade: activeFacade,
+                    KeyedSubtree(
+                      key: const ValueKey('facade-generation-card'),
+                      child: _FacadeGenerationForm(
+                        sectionsController: _sectionsController,
+                        sectionWidthController: _sectionWidthController,
+                        storeysController: _storeysController,
+                        storeyHeightController: _storeyHeightController,
+                        onGeneratePressed: () => _generateGrid(project.projectId, activeFacade.sideId),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    KeyedSubtree(
+                      key: const ValueKey('facade-standing-height-card'),
+                      child: _FacadeStandingHeightCard(
+                        controller: _standingHeightController,
+                        onApplyPressed: () => _saveStandingHeight(
+                          projectId: project.projectId,
+                          facadeSideId: activeFacade.sideId,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    KeyedSubtree(
+                      key: const ValueKey('facade-grid-card'),
+                      child: _FacadeGridCard(
+                        projectId: project.projectId,
+                        facade: activeFacade,
+                      ),
                     ),
                   ],
                 ),
