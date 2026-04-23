@@ -48,11 +48,11 @@ Brug kun disse statustyper:
 ## Fremdrift
 - Total tasks: 21
 - Fase 0 setup: done
-- Done: 12
+- Done: 13
 - Active: 1
-- Planned: 8
+- Planned: 7
 - Aktuel fase: Fase 4
-- Aktuel fokus: T13
+- Aktuel fokus: T14
 
 ## Aktuel repo-status
 Repoet indeholder allerede:
@@ -77,7 +77,8 @@ Det betyder:
 - T10 er implementeret med facadegrid-generering, visning og persistens
 - T11 er implementeret med direkte line-drag og persistens
 - T12 er merged via PR #13
-- T13 er næste aktive task
+- T13 er merged via PR #15
+- T14 er næste aktive task
 
 ---
 
@@ -345,7 +346,8 @@ Mål: brugbart output og basal robusthed.
 
 ## T13 — Facade side switching
 - Fase: 4
-- Status: active
+- Status: done
+- Repo-note: merged via PR #15
 - Mål: skifte hurtigt mellem facader
 - Indhold:
   - next/previous side
@@ -356,7 +358,7 @@ Mål: brugbart output og basal robusthed.
 
 ## T14 — Facade state persistence
 - Fase: 4
-- Status: planned
+- Status: active
 - Mål: bevare facadeændringer pr. side
 - Indhold:
   - persist facade state
