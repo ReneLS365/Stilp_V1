@@ -48,11 +48,11 @@ Brug kun disse statustyper:
 ## Fremdrift
 - Total tasks: 21
 - Fase 0 setup: done
-- Done: 13
+- Done: 14
 - Active: 1
-- Planned: 7
-- Aktuel fase: Fase 4
-- Aktuel fokus: T14
+- Planned: 6
+- Aktuel fase: Fase 5
+- Aktuel fokus: T15
 
 ## Aktuel repo-status
 Repoet indeholder allerede:
@@ -78,7 +78,8 @@ Det betyder:
 - T11 er implementeret med direkte line-drag og persistens
 - T12 er merged via PR #13
 - T13 er merged via PR #15
-- T14 er næste aktive task
+- T14 er merged via PR #17
+- T15 er næste aktive task
 
 ---
 
@@ -358,7 +359,8 @@ Mål: brugbart output og basal robusthed.
 
 ## T14 — Facade state persistence
 - Fase: 4
-- Status: active
+- Status: done
+- Repo-note: merged via PR #17
 - Mål: bevare facadeændringer pr. side
 - Indhold:
   - persist facade state
@@ -369,7 +371,7 @@ Mål: brugbart output og basal robusthed.
 
 ## T15 — Visual markers
 - Fase: 5
-- Status: planned
+- Status: active
 - Mål: placere visuelle markører i facaden
 - Indhold:
   - console
