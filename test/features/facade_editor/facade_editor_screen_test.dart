@@ -113,19 +113,16 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    final verticalScrollFinder = find.byKey(const ValueKey('facade-editor-vertical-scroll'));
-
     expect(find.text('Facader (2)'), findsOneWidget);
     final planEdgeLabelFinder = find.byKey(const ValueKey('facade-plan-edge-label'));
     expect(planEdgeLabelFinder, findsOneWidget);
     expect(tester.widget<Text>(planEdgeLabelFinder).data, 'Plan edge: e1');
 
-    final emptyStateFinder = find.byKey(const ValueKey('facade-grid-empty-state'));
-    await tester.scrollUntilVisible(
-      emptyStateFinder,
-      200,
-      scrollable: verticalScrollFinder,
+    final emptyStateFinder = find.byKey(
+      const ValueKey('facade-grid-empty-state'),
+      skipOffstage: false,
     );
+    await tester.ensureVisible(emptyStateFinder);
     await tester.pumpAndSettle();
     expect(emptyStateFinder, findsOneWidget);
     expect(tester.widget<Text>(emptyStateFinder).data, 'No grid generated yet for this facade side.');
@@ -135,12 +132,11 @@ void main() {
 
     expect(planEdgeLabelFinder, findsOneWidget);
     expect(tester.widget<Text>(planEdgeLabelFinder).data, 'Plan edge: e2');
-    final generatedSummaryFinder = find.byKey(const ValueKey('facade-grid-generated-summary'));
-    await tester.scrollUntilVisible(
-      generatedSummaryFinder,
-      200,
-      scrollable: verticalScrollFinder,
+    final generatedSummaryFinder = find.byKey(
+      const ValueKey('facade-grid-generated-summary'),
+      skipOffstage: false,
     );
+    await tester.ensureVisible(generatedSummaryFinder);
     await tester.pumpAndSettle();
     expect(generatedSummaryFinder, findsOneWidget);
     expect(tester.widget<Text>(generatedSummaryFinder).data, '1 sections · 1 storeys');
@@ -206,22 +202,31 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    final verticalScrollFinder = find.byKey(const ValueKey('facade-editor-vertical-scroll'));
-    final standingHeightInputFinder = find.byKey(const ValueKey('standing-height-input'));
-    await tester.scrollUntilVisible(
-      standingHeightInputFinder,
-      200,
-      scrollable: verticalScrollFinder,
+    final standingHeightInputFinder = find.byKey(
+      const ValueKey('standing-height-input'),
+      skipOffstage: false,
     );
+    final standingHeightApplyFinder = find.byKey(
+      const ValueKey('standing-height-apply'),
+      skipOffstage: false,
+    );
+    await tester.ensureVisible(standingHeightInputFinder);
+    await tester.ensureVisible(standingHeightApplyFinder);
     await tester.pumpAndSettle();
 
-    final standingHeightLabelFinder = find.byKey(const ValueKey('standing-height-label'));
-    final topZoneLabelFinder = find.byKey(const ValueKey('top-zone-label'));
+    final standingHeightLabelFinder = find.byKey(
+      const ValueKey('standing-height-label'),
+      skipOffstage: false,
+    );
+    final topZoneLabelFinder = find.byKey(
+      const ValueKey('top-zone-label'),
+      skipOffstage: false,
+    );
 
     expect(find.text('Standing height: - m'), findsOneWidget);
     expect(find.text('Top zone: - m'), findsOneWidget);
     await tester.enterText(standingHeightInputFinder, '3.20');
-    await tester.tap(find.widgetWithText(FilledButton, 'Apply standing height'));
+    await tester.tap(standingHeightApplyFinder);
     await tester.pumpAndSettle();
 
     await tester.ensureVisible(standingHeightLabelFinder);

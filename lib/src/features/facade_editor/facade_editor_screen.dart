@@ -258,6 +258,7 @@ class _FacadeStandingHeightCard extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
+                key: const ValueKey('standing-height-apply'),
                 onPressed: onApplyPressed,
                 child: const Text('Apply standing height'),
               ),
