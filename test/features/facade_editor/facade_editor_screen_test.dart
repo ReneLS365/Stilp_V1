@@ -275,6 +275,103 @@ void main() {
     expect(_readKeyedText(const ValueKey('top-zone-label'), tester), 'Top zone: 1.00 m');
   });
 
+  testWidgets('generation and standing-height inputs sync to the active facade without stale bleed', (
+    tester,
+  ) async {
+    final store = InMemoryProjectStore();
+    await store.saveProject(
+      ProjectDocument.empty(
+        projectId: 'project-controller-sync',
+        taskType: 'Facade test',
+        now: DateTime.utc(2026, 4, 22, 10, 0),
+      ).copyWith(
+        facades: const [
+          FacadeDocument(
+            sideId: 'e1',
+            label: 'Side 1',
+            planEdgeId: 'edge-a',
+            sideOrder: 0,
+            edgeLengthMm: 7700,
+            sideType: PlanSideType.langside,
+            eavesHeightMm: 3200,
+            ridgeHeightMm: 4600,
+            standingHeightM: 3.2,
+            topZoneM: 1,
+            sections: [
+              FacadeSection(id: 'sec-1', widthM: 1.4),
+              FacadeSection(id: 'sec-2', widthM: 1.6),
+            ],
+            storeys: [
+              FacadeStorey(id: 'st-1', heightM: 2.4, kind: FacadeStoreyKind.main),
+              FacadeStorey(id: 'st-2', heightM: 1.6, kind: FacadeStoreyKind.main),
+            ],
+            markers: [],
+          ),
+          FacadeDocument(
+            sideId: 'e2',
+            label: 'Side 2',
+            planEdgeId: 'edge-b',
+            sideOrder: 1,
+            edgeLengthMm: 5140,
+            sideType: PlanSideType.gavl,
+            eavesHeightMm: null,
+            ridgeHeightMm: null,
+            standingHeightM: null,
+            topZoneM: 0,
+            sections: [],
+            storeys: [],
+            markers: [],
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          localProjectStoreProvider.overrideWithValue(store),
+          projectSessionControllerProvider.overrideWith(
+            (ref) => ProjectSessionController()..openProject('project-controller-sync'),
+          ),
+        ],
+        child: const MaterialApp(home: Scaffold(body: FacadeEditorScreen())),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(_readTextFieldValue(const ValueKey('generation-sections-input'), tester), '2');
+    expect(_readTextFieldValue(const ValueKey('generation-section-width-input'), tester), '1.40');
+    expect(_readTextFieldValue(const ValueKey('generation-storeys-input'), tester), '2');
+    expect(_readTextFieldValue(const ValueKey('generation-storey-height-input'), tester), '2.40');
+    expect(_readTextFieldValue(const ValueKey('standing-height-input'), tester), '3.20');
+
+    await _enterTextInSection(
+      tester,
+      sectionKey: const ValueKey('facade-generation-card'),
+      inputKey: const ValueKey('generation-sections-input'),
+      value: '99',
+    );
+    expect(_readTextFieldValue(const ValueKey('generation-sections-input'), tester), '99');
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Side 2'));
+    await tester.pumpAndSettle();
+
+    expect(_readTextFieldValue(const ValueKey('generation-sections-input'), tester), '2');
+    expect(_readTextFieldValue(const ValueKey('generation-section-width-input'), tester), '2.57');
+    expect(_readTextFieldValue(const ValueKey('generation-storeys-input'), tester), '2');
+    expect(_readTextFieldValue(const ValueKey('generation-storey-height-input'), tester), '2.00');
+    expect(_readTextFieldValue(const ValueKey('standing-height-input'), tester), '');
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Side 1'));
+    await tester.pumpAndSettle();
+
+    expect(_readTextFieldValue(const ValueKey('generation-sections-input'), tester), '2');
+    expect(_readTextFieldValue(const ValueKey('generation-section-width-input'), tester), '1.40');
+    expect(_readTextFieldValue(const ValueKey('generation-storeys-input'), tester), '2');
+    expect(_readTextFieldValue(const ValueKey('generation-storey-height-input'), tester), '2.40');
+    expect(_readTextFieldValue(const ValueKey('standing-height-input'), tester), '3.20');
+  });
+
   testWidgets('applies standing height for selected facade and keeps other facade untouched', (
     tester,
   ) async {
@@ -390,6 +487,13 @@ String? _readKeyedText(ValueKey<String> textKey, WidgetTester tester) {
   final finder = _keyedFinder(textKey);
   expect(finder, findsOneWidget);
   return tester.widget<Text>(finder).data;
+}
+
+String _readTextFieldValue(ValueKey<String> inputKey, WidgetTester tester) {
+  final finder = _keyedFinder(inputKey);
+  expect(finder, findsOneWidget);
+  final field = tester.widget<TextField>(finder);
+  return field.controller?.text ?? '';
 }
 
 Future<void> _enterTextInSection(
