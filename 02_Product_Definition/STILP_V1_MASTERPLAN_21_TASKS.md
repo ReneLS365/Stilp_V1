@@ -51,7 +51,7 @@ Brug kun disse statustyper:
 - Done: 14
 - Active: 1
 - Planned: 6
-- Aktuel fase: Fase 4
+- Aktuel fase: Fase 5
 - Aktuel fokus: T15
 
 ## Aktuel repo-status
