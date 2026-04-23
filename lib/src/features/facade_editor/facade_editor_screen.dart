@@ -446,7 +446,7 @@ class _FacadeGridPainter extends CustomPainter {
     final standingLinePaint = Paint()
       ..color = Colors.orange
       ..strokeWidth = 2;
-    final topZonePaint = Paint()..color = Colors.orange.withOpacity(0.14);
+    final topZonePaint = Paint()..color = Colors.orange.withValues(alpha: 0.14);
 
     canvas.drawRect(Offset.zero & size, borderPaint);
 
