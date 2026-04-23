@@ -114,22 +114,162 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Facader (2)'), findsOneWidget);
-    expect(find.text('Plan edge: e1'), findsOneWidget);
+    await _scrollToSection(tester, const ValueKey('facade-metadata-card'));
+    expect(_readKeyedText(const ValueKey('facade-plan-edge-label'), tester), 'Plan edge: e1');
 
-    final emptyStateText = find.text(
+    await _scrollToSection(tester, const ValueKey('facade-grid-card'));
+    expect(
+      _readKeyedText(const ValueKey('facade-grid-empty-state'), tester),
       'No grid generated yet for this facade side.',
-      skipOffstage: false,
     );
-    expect(emptyStateText, findsOneWidget);
 
     await tester.tap(find.widgetWithText(ChoiceChip, 'Side 2'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Plan edge: e2'), findsOneWidget);
-    final generatedStateText = find.text(
-      '1 sections · 1 storeys',
-      skipOffstage: false,
-    );
-    expect(generatedStateText, findsOneWidget);
+    await _scrollToSection(tester, const ValueKey('facade-metadata-card'), delta: const Offset(0, 200));
+    expect(_readKeyedText(const ValueKey('facade-plan-edge-label'), tester), 'Plan edge: e2');
+    await _scrollToSection(tester, const ValueKey('facade-grid-card'));
+    expect(_readKeyedText(const ValueKey('facade-grid-generated-summary'), tester), '1 sections · 1 storeys');
   });
+
+  testWidgets('applies standing height for selected facade and keeps other facade untouched', (
+    tester,
+  ) async {
+    final store = InMemoryProjectStore();
+    const projectId = 'project-standing-height';
+    await store.saveProject(
+      ProjectDocument.empty(
+        projectId: projectId,
+        taskType: 'Facade test',
+        now: DateTime.utc(2026, 4, 22, 10, 0),
+      ).copyWith(
+        facades: const [
+          FacadeDocument(
+            sideId: 'e1',
+            label: 'Side 1',
+            planEdgeId: 'e1',
+            sideOrder: 0,
+            edgeLengthMm: 2000,
+            sideType: PlanSideType.langside,
+            eavesHeightMm: 3200,
+            ridgeHeightMm: 4600,
+            standingHeightM: null,
+            topZoneM: 1,
+            sections: [FacadeSection(id: 'sec-1', widthM: 1.5)],
+            storeys: [FacadeStorey(id: 'st-1', heightM: 2.0, kind: FacadeStoreyKind.main)],
+            markers: [],
+          ),
+          FacadeDocument(
+            sideId: 'e2',
+            label: 'Side 2',
+            planEdgeId: 'e2',
+            sideOrder: 1,
+            edgeLengthMm: 1800,
+            sideType: PlanSideType.gavl,
+            eavesHeightMm: null,
+            ridgeHeightMm: null,
+            standingHeightM: null,
+            topZoneM: 1,
+            sections: [FacadeSection(id: 'sec-1', widthM: 1.5)],
+            storeys: [FacadeStorey(id: 'st-1', heightM: 2.0, kind: FacadeStoreyKind.main)],
+            markers: [],
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          localProjectStoreProvider.overrideWithValue(store),
+          projectSessionControllerProvider.overrideWith(
+            (ref) => ProjectSessionController()..openProject(projectId),
+          ),
+        ],
+        child: const MaterialApp(home: Scaffold(body: FacadeEditorScreen())),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    await _scrollToSection(tester, const ValueKey('facade-metadata-card'), delta: const Offset(0, 200));
+    expect(_readKeyedText(const ValueKey('standing-height-label'), tester), 'Standing height: - m');
+    expect(_readKeyedText(const ValueKey('top-zone-label'), tester), 'Top zone: - m');
+
+    await _enterTextInSection(
+      tester,
+      sectionKey: const ValueKey('facade-standing-height-card'),
+      inputKey: const ValueKey('standing-height-input'),
+      value: '3.20',
+    );
+    await _tapInSection(
+      tester,
+      sectionKey: const ValueKey('facade-standing-height-card'),
+      targetKey: const ValueKey('standing-height-apply'),
+    );
+    await tester.pumpAndSettle();
+
+    await _scrollToSection(tester, const ValueKey('facade-metadata-card'), delta: const Offset(0, 200));
+    expect(_readKeyedText(const ValueKey('standing-height-label'), tester), 'Standing height: 3.20 m');
+    expect(_readKeyedText(const ValueKey('top-zone-label'), tester), 'Top zone: 1.00 m');
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Side 2'));
+    await tester.pumpAndSettle();
+    await _scrollToSection(tester, const ValueKey('facade-metadata-card'), delta: const Offset(0, 200));
+    expect(_readKeyedText(const ValueKey('standing-height-label'), tester), 'Standing height: - m');
+    expect(_readKeyedText(const ValueKey('top-zone-label'), tester), 'Top zone: - m');
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Side 1'));
+    await tester.pumpAndSettle();
+    await _scrollToSection(tester, const ValueKey('facade-metadata-card'), delta: const Offset(0, 200));
+    expect(_readKeyedText(const ValueKey('standing-height-label'), tester), 'Standing height: 3.20 m');
+    expect(_readKeyedText(const ValueKey('top-zone-label'), tester), 'Top zone: 1.00 m');
+  });
+}
+
+Finder _verticalListViewFinder() => find.byKey(const ValueKey('facade-editor-vertical-scroll'));
+
+Finder _keyedFinder(ValueKey<String> key) => find.byKey(key, skipOffstage: false);
+
+Future<void> _scrollToSection(
+  WidgetTester tester,
+  ValueKey<String> sectionKey, {
+  Offset delta = const Offset(0, -200),
+}) async {
+  final listFinder = _verticalListViewFinder();
+  expect(listFinder, findsOneWidget);
+  final sectionFinder = _keyedFinder(sectionKey);
+  await tester.dragUntilVisible(sectionFinder, listFinder, delta);
+  await tester.pumpAndSettle();
+}
+
+String? _readKeyedText(ValueKey<String> textKey, WidgetTester tester) {
+  final finder = _keyedFinder(textKey);
+  expect(finder, findsOneWidget);
+  return tester.widget<Text>(finder).data;
+}
+
+Future<void> _enterTextInSection(
+  WidgetTester tester, {
+  required ValueKey<String> sectionKey,
+  required ValueKey<String> inputKey,
+  required String value,
+}) async {
+  await _scrollToSection(tester, sectionKey);
+  final inputFinder = _keyedFinder(inputKey);
+  await tester.ensureVisible(inputFinder);
+  await tester.pumpAndSettle();
+  await tester.enterText(inputFinder, value);
+}
+
+Future<void> _tapInSection(
+  WidgetTester tester, {
+  required ValueKey<String> sectionKey,
+  required ValueKey<String> targetKey,
+}) async {
+  await _scrollToSection(tester, sectionKey);
+  final targetFinder = _keyedFinder(targetKey);
+  await tester.ensureVisible(targetFinder);
+  await tester.pumpAndSettle();
+  await tester.tap(targetFinder);
 }
