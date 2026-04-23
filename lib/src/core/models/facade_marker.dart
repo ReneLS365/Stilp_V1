@@ -48,6 +48,8 @@ class FacadeMarker {
     required this.type,
     required this.sectionIndex,
     required this.storeyIndex,
+    this.localDx,
+    this.localDy,
     this.text,
     this.meta,
   });
@@ -56,6 +58,8 @@ class FacadeMarker {
   final FacadeMarkerType type;
   final int sectionIndex;
   final int storeyIndex;
+  final double? localDx;
+  final double? localDy;
   final String? text;
   final Map<String, dynamic>? meta;
 
@@ -64,16 +68,22 @@ class FacadeMarker {
     FacadeMarkerType? type,
     int? sectionIndex,
     int? storeyIndex,
+    double? localDx,
+    double? localDy,
     String? text,
     Map<String, dynamic>? meta,
     bool clearText = false,
     bool clearMeta = false,
+    bool clearLocalDx = false,
+    bool clearLocalDy = false,
   }) {
     return FacadeMarker(
       id: id ?? this.id,
       type: type ?? this.type,
       sectionIndex: sectionIndex ?? this.sectionIndex,
       storeyIndex: storeyIndex ?? this.storeyIndex,
+      localDx: clearLocalDx ? null : (localDx ?? this.localDx),
+      localDy: clearLocalDy ? null : (localDy ?? this.localDy),
       text: clearText ? null : (text ?? this.text),
       meta: clearMeta ? null : (meta ?? this.meta),
     );
@@ -85,6 +95,8 @@ class FacadeMarker {
       'type': type.jsonValue,
       'sectionIndex': sectionIndex,
       'storeyIndex': storeyIndex,
+      'localDx': localDx,
+      'localDy': localDy,
       'text': text,
       'meta': meta,
     };
@@ -96,6 +108,8 @@ class FacadeMarker {
       type: facadeMarkerTypeFromJsonValue(json['type'] as String?),
       sectionIndex: (json['sectionIndex'] as num?)?.toInt() ?? 0,
       storeyIndex: (json['storeyIndex'] as num?)?.toInt() ?? 0,
+      localDx: (json['localDx'] as num?)?.toDouble(),
+      localDy: (json['localDy'] as num?)?.toDouble(),
       text: json['text'] as String?,
       meta: (json['meta'] as Map?)?.map(
         (key, value) => MapEntry('$key', value),
