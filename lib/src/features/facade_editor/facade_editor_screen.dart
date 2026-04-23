@@ -111,22 +111,27 @@ class _FacadeEditorScreenState extends ConsumerState<FacadeEditorScreen> {
                 child: ListView(
                   key: const ValueKey('facade-editor-vertical-scroll'),
                   children: [
-                    _FacadeMetadataCard(facade: activeFacade),
-                    const SizedBox(height: 12),
-                    _FacadeGenerationForm(
-                      sectionsController: _sectionsController,
-                      sectionWidthController: _sectionWidthController,
-                      storeysController: _storeysController,
-                      storeyHeightController: _storeyHeightController,
-                      onGeneratePressed: () => _generateGrid(project.projectId, activeFacade.sideId),
-                    ),
-                    const SizedBox(height: 12),
-                    _FacadeStandingHeightCard(
-                      controller: _standingHeightController,
-                      onApplyPressed: () => _saveStandingHeight(
-                        projectId: project.projectId,
-                        facadeSideId: activeFacade.sideId,
-                      ),
+                    Column(
+                      key: const ValueKey('standing-height-card'),
+                      children: [
+                        _FacadeMetadataCard(facade: activeFacade),
+                        const SizedBox(height: 12),
+                        _FacadeGenerationForm(
+                          sectionsController: _sectionsController,
+                          sectionWidthController: _sectionWidthController,
+                          storeysController: _storeysController,
+                          storeyHeightController: _storeyHeightController,
+                          onGeneratePressed: () => _generateGrid(project.projectId, activeFacade.sideId),
+                        ),
+                        const SizedBox(height: 12),
+                        _FacadeStandingHeightCard(
+                          controller: _standingHeightController,
+                          onApplyPressed: () => _saveStandingHeight(
+                            projectId: project.projectId,
+                            facadeSideId: activeFacade.sideId,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     _FacadeGridCard(

@@ -224,6 +224,15 @@ void main() {
       const ValueKey('standing-height-apply'),
       skipOffstage: false,
     );
+    final standingHeightCardFinder = find.byKey(
+      const ValueKey('standing-height-card'),
+      skipOffstage: false,
+    );
+    await tester.dragUntilVisible(
+      standingHeightCardFinder,
+      verticalListViewFinder,
+      const Offset(0, -200),
+    );
     await tester.dragUntilVisible(
       standingHeightInputFinder,
       verticalListViewFinder,
@@ -245,6 +254,12 @@ void main() {
       skipOffstage: false,
     );
 
+    await tester.dragUntilVisible(
+      standingHeightCardFinder,
+      verticalListViewFinder,
+      const Offset(0, 200),
+    );
+    await tester.pumpAndSettle();
     expect(tester.widget<Text>(standingHeightLabelFinder).data, 'Standing height: - m');
     expect(tester.widget<Text>(topZoneLabelFinder).data, 'Top zone: - m');
     await tester.enterText(standingHeightInputFinder, '3.20');
@@ -252,7 +267,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.dragUntilVisible(
-      standingHeightLabelFinder,
+      standingHeightCardFinder,
       verticalListViewFinder,
       const Offset(0, 200),
     );
@@ -263,7 +278,7 @@ void main() {
     await tester.tap(find.widgetWithText(ChoiceChip, 'Side 2'));
     await tester.pumpAndSettle();
     await tester.dragUntilVisible(
-      topZoneLabelFinder,
+      standingHeightCardFinder,
       verticalListViewFinder,
       const Offset(0, 200),
     );
@@ -274,7 +289,7 @@ void main() {
     await tester.tap(find.widgetWithText(ChoiceChip, 'Side 1'));
     await tester.pumpAndSettle();
     await tester.dragUntilVisible(
-      topZoneLabelFinder,
+      standingHeightCardFinder,
       verticalListViewFinder,
       const Offset(0, 200),
     );
