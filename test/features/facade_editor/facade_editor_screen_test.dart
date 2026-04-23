@@ -113,11 +113,8 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    final verticalScrollableFinder = find.descendant(
-      of: find.byKey(const ValueKey('facade-editor-vertical-scroll')),
-      matching: find.byType(Scrollable),
-    );
-    expect(verticalScrollableFinder, findsOneWidget);
+    final verticalListViewFinder = find.byKey(const ValueKey('facade-editor-vertical-scroll'));
+    expect(verticalListViewFinder, findsOneWidget);
 
     expect(find.text('Facader (2)'), findsOneWidget);
     final planEdgeLabelFinder = find.byKey(const ValueKey('facade-plan-edge-label'));
@@ -128,10 +125,10 @@ void main() {
       const ValueKey('facade-grid-empty-state'),
       skipOffstage: false,
     );
-    await tester.scrollUntilVisible(
+    await tester.dragUntilVisible(
       emptyStateFinder,
-      200,
-      scrollable: verticalScrollableFinder,
+      verticalListViewFinder,
+      const Offset(0, -200),
     );
     await tester.pumpAndSettle();
     expect(emptyStateFinder, findsOneWidget);
@@ -146,10 +143,10 @@ void main() {
       const ValueKey('facade-grid-generated-summary'),
       skipOffstage: false,
     );
-    await tester.scrollUntilVisible(
+    await tester.dragUntilVisible(
       generatedSummaryFinder,
-      200,
-      scrollable: verticalScrollableFinder,
+      verticalListViewFinder,
+      const Offset(0, -200),
     );
     await tester.pumpAndSettle();
     expect(generatedSummaryFinder, findsOneWidget);
@@ -216,11 +213,8 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    final verticalScrollableFinder = find.descendant(
-      of: find.byKey(const ValueKey('facade-editor-vertical-scroll')),
-      matching: find.byType(Scrollable),
-    );
-    expect(verticalScrollableFinder, findsOneWidget);
+    final verticalListViewFinder = find.byKey(const ValueKey('facade-editor-vertical-scroll'));
+    expect(verticalListViewFinder, findsOneWidget);
 
     final standingHeightInputFinder = find.byKey(
       const ValueKey('standing-height-input'),
@@ -230,15 +224,15 @@ void main() {
       const ValueKey('standing-height-apply'),
       skipOffstage: false,
     );
-    await tester.scrollUntilVisible(
+    await tester.dragUntilVisible(
       standingHeightInputFinder,
-      200,
-      scrollable: verticalScrollableFinder,
+      verticalListViewFinder,
+      const Offset(0, -200),
     );
-    await tester.scrollUntilVisible(
+    await tester.dragUntilVisible(
       standingHeightApplyFinder,
-      200,
-      scrollable: verticalScrollableFinder,
+      verticalListViewFinder,
+      const Offset(0, -200),
     );
     await tester.pumpAndSettle();
 
@@ -257,10 +251,10 @@ void main() {
     await tester.tap(standingHeightApplyFinder);
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(
+    await tester.dragUntilVisible(
       standingHeightLabelFinder,
-      200,
-      scrollable: verticalScrollableFinder,
+      verticalListViewFinder,
+      const Offset(0, 200),
     );
     await tester.pumpAndSettle();
     expect(tester.widget<Text>(standingHeightLabelFinder).data, 'Standing height: 3.20 m');
@@ -268,10 +262,10 @@ void main() {
 
     await tester.tap(find.widgetWithText(ChoiceChip, 'Side 2'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
+    await tester.dragUntilVisible(
       topZoneLabelFinder,
-      200,
-      scrollable: verticalScrollableFinder,
+      verticalListViewFinder,
+      const Offset(0, 200),
     );
     await tester.pumpAndSettle();
     expect(tester.widget<Text>(standingHeightLabelFinder).data, 'Standing height: - m');
@@ -279,10 +273,10 @@ void main() {
 
     await tester.tap(find.widgetWithText(ChoiceChip, 'Side 1'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
+    await tester.dragUntilVisible(
       topZoneLabelFinder,
-      200,
-      scrollable: verticalScrollableFinder,
+      verticalListViewFinder,
+      const Offset(0, 200),
     );
     await tester.pumpAndSettle();
     expect(tester.widget<Text>(standingHeightLabelFinder).data, 'Standing height: 3.20 m');
