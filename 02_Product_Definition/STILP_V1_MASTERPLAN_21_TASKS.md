@@ -48,11 +48,11 @@ Brug kun disse statustyper:
 ## Fremdrift
 - Total tasks: 21
 - Fase 0 setup: done
-- Done: 11
+- Done: 12
 - Active: 1
-- Planned: 9
+- Planned: 8
 - Aktuel fase: Fase 4
-- Aktuel fokus: T12
+- Aktuel fokus: T13
 
 ## Aktuel repo-status
 Repoet indeholder allerede:
@@ -76,7 +76,8 @@ Det betyder:
 - T09 er implementeret med plan-til-facade mapping, labels og persistens
 - T10 er implementeret med facadegrid-generering, visning og persistens
 - T11 er implementeret med direkte line-drag og persistens
-- T12 er næste aktive task
+- T12 er merged via PR #13
+- T13 er næste aktive task
 
 ---
 
@@ -330,7 +331,7 @@ Mål: brugbart output og basal robusthed.
 
 ## T12 — Standing height and top zone
 - Fase: 4
-- Status: active
+- Status: done
 - Mål: vise ståhøjde og automatisk topzone
 - Indhold:
   - top standing height input
@@ -339,10 +340,12 @@ Mål: brugbart output og basal robusthed.
 - Afhænger af: T10
 - Done når:
   - topzone genereres og gemmes korrekt
+- Repo-note:
+  - merged via PR #13
 
 ## T13 — Facade side switching
 - Fase: 4
-- Status: planned
+- Status: active
 - Mål: skifte hurtigt mellem facader
 - Indhold:
   - next/previous side
