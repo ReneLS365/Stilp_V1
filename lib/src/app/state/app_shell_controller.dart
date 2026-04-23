@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../core/models/project_summary.dart';
 import '../../data/projects/file_local_project_store.dart';
 import '../../data/projects/local_project_store.dart';
+import '../../data/projects/project_mutation_queue.dart';
 import 'app_shell_state.dart';
 
 final localProjectStoreProvider = Provider<LocalProjectStore>((ref) {
@@ -20,6 +21,10 @@ final localProjectStoreProvider = Provider<LocalProjectStore>((ref) {
 final projectsProvider = FutureProvider<List<ProjectSummary>>((ref) async {
   final store = ref.watch(localProjectStoreProvider);
   return store.listProjects();
+});
+
+final projectMutationQueueProvider = Provider<ProjectMutationQueue>((ref) {
+  return ProjectMutationQueue();
 });
 
 final appShellControllerProvider =

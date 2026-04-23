@@ -11,7 +11,9 @@ import 'package:stilp_v1/src/core/models/project_summary.dart';
 import 'package:stilp_v1/src/data/projects/file_local_project_store.dart';
 import 'package:stilp_v1/src/data/projects/in_memory_project_store.dart';
 import 'package:stilp_v1/src/data/projects/local_project_store.dart';
+import 'package:stilp_v1/src/data/projects/project_mutation_queue.dart';
 import 'package:stilp_v1/src/features/facade_editor/facade_standing_height_input_parser.dart';
+import 'package:stilp_v1/src/features/facade_editor/state/facade_grid_adjustment_controller.dart';
 import 'package:stilp_v1/src/features/facade_editor/state/facade_standing_height_controller.dart';
 
 void main() {
@@ -183,6 +185,53 @@ void main() {
       final facade = reloaded!.facades.firstWhere((value) => value.sideId == 'e1');
 
       expect(facade.standingHeightM, closeTo(3.1, 0.0001));
+      expect(facade.topZoneM, facadeTopZoneHeightM);
+    });
+
+    test('standing-height save is serialized with grid save for same project', () async {
+      const projectId = 'standing-height-grid-serialized';
+      final store = _ControlledSaveProjectStore(_project(projectId));
+      final queue = ProjectMutationQueue();
+      final gridController = FacadeGridAdjustmentController(
+        store: store,
+        now: () => DateTime.utc(2026, 4, 22, 12, 0),
+        mutationQueue: queue,
+      );
+      final standingController = FacadeStandingHeightController(
+        store: store,
+        now: () => DateTime.utc(2026, 4, 22, 12, 0),
+        mutationQueue: queue,
+      );
+
+      final gridSave = gridController.saveAdjustedGrid(
+        projectId: projectId,
+        facadeSideId: 'e1',
+        sections: const [
+          FacadeSection(id: 's1', widthM: 1.25),
+          FacadeSection(id: 's2', widthM: 0.75),
+        ],
+        storeys: const [
+          FacadeStorey(id: 'st1', heightM: 2.2, kind: FacadeStoreyKind.main),
+          FacadeStorey(id: 'st2', heightM: 1.8, kind: FacadeStoreyKind.main),
+        ],
+      );
+      final standingSave = standingController.saveStandingHeight(
+        projectId: projectId,
+        facadeSideId: 'e1',
+        standingHeightM: 3.15,
+      );
+
+      await Future<void>.delayed(Duration.zero);
+      store.releaseSave(0);
+      store.releaseSave(1);
+      await Future.wait([gridSave, standingSave]);
+
+      final reloaded = await store.getProject(projectId);
+      final facade = reloaded!.facades.firstWhere((value) => value.sideId == 'e1');
+
+      expect(facade.sections.map((section) => section.widthM), [1.25, 0.75]);
+      expect(facade.storeys.map((storey) => storey.heightM), [2.2, 1.8]);
+      expect(facade.standingHeightM, closeTo(3.15, 0.0001));
       expect(facade.topZoneM, facadeTopZoneHeightM);
     });
   });

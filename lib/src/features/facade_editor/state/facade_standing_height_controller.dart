@@ -2,14 +2,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/state/app_shell_controller.dart';
 import '../../../data/projects/local_project_store.dart';
+import '../../../data/projects/project_mutation_queue.dart';
 
 const double facadeTopZoneHeightM = 1.0;
 
 final facadeStandingHeightControllerProvider = Provider<FacadeStandingHeightController>((ref) {
   final store = ref.watch(localProjectStoreProvider);
+  final mutationQueue = ref.watch(projectMutationQueueProvider);
   return FacadeStandingHeightController(
     store: store,
     now: DateTime.now,
+    mutationQueue: mutationQueue,
   );
 });
 
@@ -27,27 +30,27 @@ class FacadeStandingHeightController {
   FacadeStandingHeightController({
     required LocalProjectStore store,
     required DateTime Function() now,
+    ProjectMutationQueue? mutationQueue,
   })  : _store = store,
-        _now = now;
+        _now = now,
+        _mutationQueue = mutationQueue ?? ProjectMutationQueue();
 
   final LocalProjectStore _store;
   final DateTime Function() _now;
-  Future<void> _pendingSave = Future<void>.value();
+  final ProjectMutationQueue _mutationQueue;
 
   Future<FacadeStandingHeightSaveResult> saveStandingHeight({
     required String projectId,
     required String facadeSideId,
     required double? standingHeightM,
   }) async {
-    final saveOperation = _pendingSave.then((_) {
+    return _mutationQueue.enqueue(projectId, () {
       return _saveStandingHeightInternal(
         projectId: projectId,
         facadeSideId: facadeSideId,
         standingHeightM: standingHeightM,
       );
     });
-    _pendingSave = saveOperation.then<void>((_) {}, onError: (_, __) {});
-    return saveOperation;
   }
 
   Future<FacadeStandingHeightSaveResult> _saveStandingHeightInternal({

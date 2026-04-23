@@ -4,12 +4,15 @@ import '../../../app/state/app_shell_controller.dart';
 import '../../../core/models/facade_section.dart';
 import '../../../core/models/facade_storey.dart';
 import '../../../data/projects/local_project_store.dart';
+import '../../../data/projects/project_mutation_queue.dart';
 
 final facadeGridAdjustmentControllerProvider = Provider<FacadeGridAdjustmentController>((ref) {
   final store = ref.watch(localProjectStoreProvider);
+  final mutationQueue = ref.watch(projectMutationQueueProvider);
   return FacadeGridAdjustmentController(
     store: store,
     now: DateTime.now,
+    mutationQueue: mutationQueue,
   );
 });
 
@@ -27,15 +30,17 @@ class FacadeGridAdjustmentController {
   FacadeGridAdjustmentController({
     required LocalProjectStore store,
     required DateTime Function() now,
+    ProjectMutationQueue? mutationQueue,
   })  : _store = store,
-        _now = now;
+        _now = now,
+        _mutationQueue = mutationQueue ?? ProjectMutationQueue();
 
   static const double minimumSectionWidthM = 0.3;
   static const double minimumStoreyHeightM = 0.3;
 
   final LocalProjectStore _store;
   final DateTime Function() _now;
-  Future<void> _pendingSave = Future<void>.value();
+  final ProjectMutationQueue _mutationQueue;
 
   static List<FacadeSection> resizeSectionsAtDivider({
     required List<FacadeSection> sections,
@@ -95,7 +100,7 @@ class FacadeGridAdjustmentController {
     required List<FacadeSection> sections,
     required List<FacadeStorey> storeys,
   }) async {
-    final saveOperation = _pendingSave.then((_) {
+    return _mutationQueue.enqueue(projectId, () {
       return _saveAdjustedGridInternal(
         projectId: projectId,
         facadeSideId: facadeSideId,
@@ -103,8 +108,6 @@ class FacadeGridAdjustmentController {
         storeys: storeys,
       );
     });
-    _pendingSave = saveOperation.then<void>((_) {}, onError: (_, __) {});
-    return saveOperation;
   }
 
   Future<FacadeGridAdjustmentResult> _saveAdjustedGridInternal({
