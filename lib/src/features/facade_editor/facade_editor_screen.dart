@@ -29,6 +29,7 @@ class _FacadeEditorScreenState extends ConsumerState<FacadeEditorScreen> {
   final _standingHeightController = TextEditingController();
 
   String? _lastFacadeSideId;
+  _FacadeFormSnapshot? _lastFacadeSnapshot;
 
   @override
   void dispose() {
@@ -185,25 +186,17 @@ class _FacadeEditorScreenState extends ConsumerState<FacadeEditorScreen> {
   }
 
   void _syncFormWithFacade(FacadeDocument facade) {
-    if (_lastFacadeSideId == facade.sideId) return;
+    final snapshot = _FacadeFormSnapshot.fromFacade(facade);
+    final shouldSync = _lastFacadeSideId != facade.sideId || _lastFacadeSnapshot != snapshot;
+    if (!shouldSync) return;
 
     _lastFacadeSideId = facade.sideId;
-    final sectionCount = facade.sections.isNotEmpty ? facade.sections.length : _defaultSections(facade);
-    final sectionWidth = facade.sections.isNotEmpty ? facade.sections.first.widthM : 2.57;
-    final storeyCount = facade.storeys.isNotEmpty ? facade.storeys.length : 2;
-    final storeyHeight = facade.storeys.isNotEmpty ? facade.storeys.first.heightM : 2.0;
-
-    _sectionsController.text = '$sectionCount';
-    _sectionWidthController.text = sectionWidth.toStringAsFixed(2);
-    _storeysController.text = '$storeyCount';
-    _storeyHeightController.text = storeyHeight.toStringAsFixed(2);
-    _standingHeightController.text = facade.standingHeightM?.toStringAsFixed(2) ?? '';
-  }
-
-  int _defaultSections(FacadeDocument facade) {
-    if (facade.edgeLengthMm <= 0) return 2;
-    final estimate = facade.edgeLengthMm / 2570;
-    return math.max(1, estimate.round());
+    _lastFacadeSnapshot = snapshot;
+    _sectionsController.text = '${snapshot.sectionCount}';
+    _sectionWidthController.text = snapshot.sectionWidthM.toStringAsFixed(2);
+    _storeysController.text = '${snapshot.storeyCount}';
+    _storeyHeightController.text = snapshot.storeyHeightM.toStringAsFixed(2);
+    _standingHeightController.text = snapshot.standingHeightM?.toStringAsFixed(2) ?? '';
   }
 
   int _activeFacadeIndex({
@@ -283,6 +276,62 @@ class _FacadeEditorScreenState extends ConsumerState<FacadeEditorScreen> {
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
   }
+}
+
+class _FacadeFormSnapshot {
+  const _FacadeFormSnapshot({
+    required this.sectionCount,
+    required this.sectionWidthM,
+    required this.storeyCount,
+    required this.storeyHeightM,
+    required this.standingHeightM,
+  });
+
+  factory _FacadeFormSnapshot.fromFacade(FacadeDocument facade) {
+    return _FacadeFormSnapshot(
+      sectionCount: facade.sections.isNotEmpty
+          ? facade.sections.length
+          : _defaultSectionCountForFacade(facade),
+      sectionWidthM: facade.sections.isNotEmpty ? facade.sections.first.widthM : 2.57,
+      storeyCount: facade.storeys.isNotEmpty ? facade.storeys.length : 2,
+      storeyHeightM: facade.storeys.isNotEmpty ? facade.storeys.first.heightM : 2.0,
+      standingHeightM: facade.standingHeightM,
+    );
+  }
+
+  final int sectionCount;
+  final double sectionWidthM;
+  final int storeyCount;
+  final double storeyHeightM;
+  final double? standingHeightM;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is _FacadeFormSnapshot &&
+        other.sectionCount == sectionCount &&
+        other.sectionWidthM == sectionWidthM &&
+        other.storeyCount == storeyCount &&
+        other.storeyHeightM == storeyHeightM &&
+        other.standingHeightM == standingHeightM;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      sectionCount,
+      sectionWidthM,
+      storeyCount,
+      storeyHeightM,
+      standingHeightM,
+    );
+  }
+}
+
+int _defaultSectionCountForFacade(FacadeDocument facade) {
+  if (facade.edgeLengthMm <= 0) return 2;
+  final estimate = facade.edgeLengthMm / 2570;
+  return math.max(1, estimate.round());
 }
 
 class _FacadeStandingHeightCard extends StatelessWidget {
@@ -394,21 +443,25 @@ class _FacadeGenerationForm extends StatelessWidget {
             Text('Basisinput', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             TextField(
+              key: const ValueKey('generation-sections-input'),
               controller: sectionsController,
               keyboardType: const TextInputType.numberWithOptions(decimal: false),
               decoration: const InputDecoration(labelText: 'Number of sections'),
             ),
             TextField(
+              key: const ValueKey('generation-section-width-input'),
               controller: sectionWidthController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: const InputDecoration(labelText: 'Default section width (m)'),
             ),
             TextField(
+              key: const ValueKey('generation-storeys-input'),
               controller: storeysController,
               keyboardType: const TextInputType.numberWithOptions(decimal: false),
               decoration: const InputDecoration(labelText: 'Number of storeys'),
             ),
             TextField(
+              key: const ValueKey('generation-storey-height-input'),
               controller: storeyHeightController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: const InputDecoration(labelText: 'Default storey height (m)'),
