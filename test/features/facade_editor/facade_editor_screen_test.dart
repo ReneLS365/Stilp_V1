@@ -114,23 +114,22 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Facader (2)'), findsOneWidget);
-    expect(find.text('Plan edge: e1'), findsOneWidget);
+    final planEdgeLabelFinder = find.byKey(const ValueKey('facade-plan-edge-label'));
+    expect(planEdgeLabelFinder, findsOneWidget);
+    expect(tester.widget<Text>(planEdgeLabelFinder).data, 'Plan edge: e1');
 
-    final emptyStateText = find.text(
-      'No grid generated yet for this facade side.',
-      skipOffstage: false,
-    );
-    expect(emptyStateText, findsOneWidget);
+    final emptyStateFinder = find.byKey(const ValueKey('facade-grid-empty-state'));
+    expect(emptyStateFinder, findsOneWidget);
+    expect(tester.widget<Text>(emptyStateFinder).data, 'No grid generated yet for this facade side.');
 
     await tester.tap(find.widgetWithText(ChoiceChip, 'Side 2'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Plan edge: e2'), findsOneWidget);
-    final generatedStateText = find.text(
-      '1 sections · 1 storeys',
-      skipOffstage: false,
-    );
-    expect(generatedStateText, findsOneWidget);
+    expect(planEdgeLabelFinder, findsOneWidget);
+    expect(tester.widget<Text>(planEdgeLabelFinder).data, 'Plan edge: e2');
+    final generatedSummaryFinder = find.byKey(const ValueKey('facade-grid-generated-summary'));
+    expect(generatedSummaryFinder, findsOneWidget);
+    expect(tester.widget<Text>(generatedSummaryFinder).data, '1 sections · 1 storeys');
   });
 
   testWidgets('applies standing height for selected facade and keeps other facade untouched', (

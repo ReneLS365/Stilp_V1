@@ -282,7 +282,10 @@ class _FacadeMetadataCard extends StatelessWidget {
           children: [
             Text(facade.label, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
-            Text('Plan edge: ${facade.planEdgeId}'),
+            Text(
+              'Plan edge: ${facade.planEdgeId}',
+              key: const ValueKey('facade-plan-edge-label'),
+            ),
             Text('Order: ${facade.sideOrder + 1}'),
             Text('Length: ${(facade.edgeLengthMm / 1000).toStringAsFixed(2)} m'),
             Text('Type: ${facade.sideType.jsonValue}'),
@@ -385,9 +388,15 @@ class _FacadeGridCard extends StatelessWidget {
             Text('Facade grid', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             if (!hasGrid)
-              const Text('No grid generated yet for this facade side.')
+              const Text(
+                'No grid generated yet for this facade side.',
+                key: ValueKey('facade-grid-empty-state'),
+              )
             else ...[
-              Text('${facade.sections.length} sections · ${facade.storeys.length} storeys'),
+              Text(
+                '${facade.sections.length} sections · ${facade.storeys.length} storeys',
+                key: const ValueKey('facade-grid-generated-summary'),
+              ),
               const SizedBox(height: 8),
               AspectRatio(
                 aspectRatio: 1.6,
