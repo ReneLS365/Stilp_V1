@@ -132,6 +132,149 @@ void main() {
     expect(_readKeyedText(const ValueKey('facade-grid-generated-summary'), tester), '1 sections · 1 storeys');
   });
 
+  testWidgets('supports previous/next facade switching with index indicator and synchronized chips', (
+    tester,
+  ) async {
+    final store = InMemoryProjectStore();
+    await store.saveProject(
+      ProjectDocument.empty(
+        projectId: 'project-side-switching',
+        taskType: 'Facade test',
+        now: DateTime.utc(2026, 4, 22, 10, 0),
+      ).copyWith(
+        facades: const [
+          FacadeDocument(
+            sideId: 'e1',
+            label: 'Side 1',
+            planEdgeId: 'edge-a',
+            sideOrder: 0,
+            edgeLengthMm: 2000,
+            sideType: PlanSideType.langside,
+            eavesHeightMm: 3200,
+            ridgeHeightMm: 4600,
+            standingHeightM: 2.8,
+            topZoneM: 1,
+            sections: [FacadeSection(id: 'sec-1', widthM: 1.5)],
+            storeys: [FacadeStorey(id: 'st-1', heightM: 2.0, kind: FacadeStoreyKind.main)],
+            markers: [],
+          ),
+          FacadeDocument(
+            sideId: 'e2',
+            label: 'Side 2',
+            planEdgeId: 'edge-b',
+            sideOrder: 1,
+            edgeLengthMm: 2000,
+            sideType: PlanSideType.langside,
+            eavesHeightMm: 3200,
+            ridgeHeightMm: 4600,
+            standingHeightM: null,
+            topZoneM: 1,
+            sections: [],
+            storeys: [],
+            markers: [],
+          ),
+          FacadeDocument(
+            sideId: 'e3',
+            label: 'Side 3',
+            planEdgeId: 'edge-c',
+            sideOrder: 2,
+            edgeLengthMm: 2000,
+            sideType: PlanSideType.gavl,
+            eavesHeightMm: null,
+            ridgeHeightMm: null,
+            standingHeightM: 3.1,
+            topZoneM: 1,
+            sections: [
+              FacadeSection(id: 'sec-1', widthM: 1.5),
+              FacadeSection(id: 'sec-2', widthM: 1.5),
+            ],
+            storeys: [FacadeStorey(id: 'st-1', heightM: 2.0, kind: FacadeStoreyKind.main)],
+            markers: [],
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          localProjectStoreProvider.overrideWithValue(store),
+          projectSessionControllerProvider.overrideWith(
+            (ref) => ProjectSessionController()..openProject('project-side-switching'),
+          ),
+        ],
+        child: const MaterialApp(home: Scaffold(body: FacadeEditorScreen())),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(_readKeyedText(const ValueKey('facade-side-position-indicator'), tester), '1 / 3');
+    expect(
+      tester.widget<IconButton>(find.byKey(const ValueKey('facade-previous-side-button'))).onPressed,
+      isNull,
+    );
+    expect(
+      tester.widget<IconButton>(find.byKey(const ValueKey('facade-next-side-button'))).onPressed,
+      isNotNull,
+    );
+    expect(_readKeyedText(const ValueKey('facade-plan-edge-label'), tester), 'Plan edge: edge-a');
+    expect(_readKeyedText(const ValueKey('standing-height-label'), tester), 'Standing height: 2.80 m');
+    expect(_readKeyedText(const ValueKey('top-zone-label'), tester), 'Top zone: 1.00 m');
+
+    await tester.tap(find.byKey(const ValueKey('facade-next-side-button')));
+    await tester.pumpAndSettle();
+
+    expect(_readKeyedText(const ValueKey('facade-side-position-indicator'), tester), '2 / 3');
+    expect(
+      _readKeyedText(const ValueKey('facade-plan-edge-label'), tester),
+      'Plan edge: edge-b',
+    );
+    await _scrollToSection(tester, const ValueKey('facade-grid-card'));
+    expect(
+      _readKeyedText(const ValueKey('facade-grid-empty-state'), tester),
+      'No grid generated yet for this facade side.',
+    );
+    await _scrollToSection(tester, const ValueKey('facade-metadata-card'), delta: const Offset(0, 200));
+    expect(_readKeyedText(const ValueKey('standing-height-label'), tester), 'Standing height: - m');
+    expect(_readKeyedText(const ValueKey('top-zone-label'), tester), 'Top zone: - m');
+
+    await tester.tap(find.byKey(const ValueKey('facade-next-side-button')));
+    await tester.pumpAndSettle();
+
+    expect(_readKeyedText(const ValueKey('facade-side-position-indicator'), tester), '3 / 3');
+    expect(
+      tester.widget<IconButton>(find.byKey(const ValueKey('facade-next-side-button'))).onPressed,
+      isNull,
+    );
+    await _scrollToSection(tester, const ValueKey('facade-grid-card'));
+    expect(_readKeyedText(const ValueKey('facade-grid-generated-summary'), tester), '2 sections · 1 storeys');
+    await _scrollToSection(tester, const ValueKey('facade-metadata-card'), delta: const Offset(0, 200));
+    expect(_readKeyedText(const ValueKey('facade-plan-edge-label'), tester), 'Plan edge: edge-c');
+    expect(_readKeyedText(const ValueKey('standing-height-label'), tester), 'Standing height: 3.10 m');
+    expect(_readKeyedText(const ValueKey('top-zone-label'), tester), 'Top zone: 1.00 m');
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Side 1'));
+    await tester.pumpAndSettle();
+    expect(_readKeyedText(const ValueKey('facade-side-position-indicator'), tester), '1 / 3');
+    expect(
+      tester.widget<IconButton>(find.byKey(const ValueKey('facade-previous-side-button'))).onPressed,
+      isNull,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('facade-next-side-button')));
+    await tester.pumpAndSettle();
+    expect(_readKeyedText(const ValueKey('facade-side-position-indicator'), tester), '2 / 3');
+    expect(_readKeyedText(const ValueKey('facade-plan-edge-label'), tester), 'Plan edge: edge-b');
+
+    await tester.tap(find.byKey(const ValueKey('facade-previous-side-button')));
+    await tester.pumpAndSettle();
+    expect(_readKeyedText(const ValueKey('facade-side-position-indicator'), tester), '1 / 3');
+    expect(_readKeyedText(const ValueKey('facade-plan-edge-label'), tester), 'Plan edge: edge-a');
+    expect(_readKeyedText(const ValueKey('standing-height-label'), tester), 'Standing height: 2.80 m');
+    expect(_readKeyedText(const ValueKey('top-zone-label'), tester), 'Top zone: 1.00 m');
+  });
+
   testWidgets('applies standing height for selected facade and keeps other facade untouched', (
     tester,
   ) async {

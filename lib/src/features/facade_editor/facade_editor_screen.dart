@@ -70,6 +70,12 @@ class _FacadeEditorScreenState extends ConsumerState<FacadeEditorScreen> {
         final selectedFacade =
             hasSelected ? facades.firstWhere((facade) => facade.sideId == selectedSideId) : null;
         final activeFacade = selectedFacade ?? facades.first;
+        final activeFacadeIndex = _activeFacadeIndex(
+          facades: facades,
+          activeFacadeSideId: activeFacade.sideId,
+        );
+        final isFirstFacade = activeFacadeIndex <= 0;
+        final isLastFacade = activeFacadeIndex >= facades.length - 1;
 
         if (selectedFacade == null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -88,6 +94,27 @@ class _FacadeEditorScreenState extends ConsumerState<FacadeEditorScreen> {
             children: [
               Text('Facader (${facades.length})', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 12),
+              Row(
+                children: [
+                  IconButton(
+                    key: const ValueKey('facade-previous-side-button'),
+                    onPressed: isFirstFacade ? null : () => _selectPreviousFacade(facades, activeFacadeIndex),
+                    icon: const Icon(Icons.chevron_left),
+                    tooltip: 'Previous facade',
+                  ),
+                  Text(
+                    '${activeFacadeIndex + 1} / ${facades.length}',
+                    key: const ValueKey('facade-side-position-indicator'),
+                  ),
+                  IconButton(
+                    key: const ValueKey('facade-next-side-button'),
+                    onPressed: isLastFacade ? null : () => _selectNextFacade(facades, activeFacadeIndex),
+                    icon: const Icon(Icons.chevron_right),
+                    tooltip: 'Next facade',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
               SizedBox(
                 height: 46,
                 child: ListView.separated(
@@ -177,6 +204,26 @@ class _FacadeEditorScreenState extends ConsumerState<FacadeEditorScreen> {
     if (facade.edgeLengthMm <= 0) return 2;
     final estimate = facade.edgeLengthMm / 2570;
     return math.max(1, estimate.round());
+  }
+
+  int _activeFacadeIndex({
+    required List<FacadeDocument> facades,
+    required String activeFacadeSideId,
+  }) {
+    final index = facades.indexWhere((facade) => facade.sideId == activeFacadeSideId);
+    return index >= 0 ? index : 0;
+  }
+
+  void _selectPreviousFacade(List<FacadeDocument> facades, int activeFacadeIndex) {
+    if (activeFacadeIndex <= 0) return;
+    final previousFacade = facades[activeFacadeIndex - 1];
+    ref.read(projectSessionControllerProvider.notifier).setSelectedFacadeSide(previousFacade.sideId);
+  }
+
+  void _selectNextFacade(List<FacadeDocument> facades, int activeFacadeIndex) {
+    if (activeFacadeIndex >= facades.length - 1) return;
+    final nextFacade = facades[activeFacadeIndex + 1];
+    ref.read(projectSessionControllerProvider.notifier).setSelectedFacadeSide(nextFacade.sideId);
   }
 
   Future<void> _generateGrid(String projectId, String sideId) async {
