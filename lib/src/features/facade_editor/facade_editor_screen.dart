@@ -109,6 +109,7 @@ class _FacadeEditorScreenState extends ConsumerState<FacadeEditorScreen> {
               const SizedBox(height: 12),
               Expanded(
                 child: ListView(
+                  key: const ValueKey('facade-editor-vertical-scroll'),
                   children: [
                     _FacadeMetadataCard(facade: activeFacade),
                     const SizedBox(height: 12),
@@ -245,6 +246,7 @@ class _FacadeStandingHeightCard extends StatelessWidget {
             Text('Ståhøjde', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             TextField(
+              key: const ValueKey('standing-height-input'),
               controller: controller,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: const InputDecoration(
