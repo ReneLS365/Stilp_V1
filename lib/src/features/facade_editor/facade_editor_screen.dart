@@ -731,8 +731,9 @@ class _FacadeGridPainter extends CustomPainter {
 
   void _paintMarkers(Canvas canvas, Size size) {
     for (final marker in markers) {
-      final dx = ((marker.localDx ?? 0.5).clamp(0.0, 1.0)) * size.width;
-      final dy = ((marker.localDy ?? 0.5).clamp(0.0, 1.0)) * size.height;
+      final normalizedPosition = _resolveMarkerNormalizedPosition(marker);
+      final dx = normalizedPosition.dx * size.width;
+      final dy = normalizedPosition.dy * size.height;
       switch (marker.type) {
         case FacadeMarkerType.console:
           _drawConsole(canvas, Offset(dx, dy));
@@ -751,6 +752,57 @@ class _FacadeGridPainter extends CustomPainter {
           break;
       }
     }
+  }
+
+  Offset _resolveMarkerNormalizedPosition(FacadeMarker marker) {
+    final localDx = marker.localDx;
+    final localDy = marker.localDy;
+    final normalizedDx =
+        localDx?.clamp(0.0, 1.0).toDouble() ?? _normalizedSectionCenter(marker.sectionIndex);
+    final normalizedDy =
+        localDy?.clamp(0.0, 1.0).toDouble() ?? _normalizedStoreyCenterFromTop(marker.storeyIndex);
+    return Offset(normalizedDx, normalizedDy);
+  }
+
+  double _normalizedSectionCenter(int sectionIndex) {
+    final totalSectionWidth = sections.fold<double>(
+      0,
+      (sum, section) => sum + section.widthM,
+    );
+    if (totalSectionWidth <= 0 || sections.isEmpty) {
+      return 0.5;
+    }
+
+    final clampedIndex = sectionIndex.clamp(0, sections.length - 1);
+    final leadingWidth = sections
+        .take(clampedIndex)
+        .fold<double>(0, (sum, section) => sum + section.widthM);
+    final currentWidth = sections[clampedIndex].widthM;
+    final center = leadingWidth + (currentWidth / 2);
+    return (center / totalSectionWidth).clamp(0.0, 1.0);
+  }
+
+  double _normalizedStoreyCenterFromTop(int storeyIndex) {
+    final totalStoreyHeight = storeys.fold<double>(
+      0,
+      (sum, storey) => sum + storey.heightM,
+    );
+    if (totalStoreyHeight <= 0 || storeys.isEmpty) {
+      return 0.5;
+    }
+
+    final clampedIndex = storeyIndex.clamp(0, storeys.length - 1);
+    final storeysFromTop = storeys.reversed.toList(growable: false);
+    final clampedTopIndex = (storeysFromTop.length - 1 - clampedIndex).clamp(
+      0,
+      storeysFromTop.length - 1,
+    );
+    final aboveHeight = storeysFromTop
+        .take(clampedTopIndex)
+        .fold<double>(0, (sum, storey) => sum + storey.heightM);
+    final currentHeight = storeysFromTop[clampedTopIndex].heightM;
+    final center = aboveHeight + (currentHeight / 2);
+    return (center / totalStoreyHeight).clamp(0.0, 1.0);
   }
 
   void _drawConsole(Canvas canvas, Offset center) {
