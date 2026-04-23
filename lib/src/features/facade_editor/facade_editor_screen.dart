@@ -891,6 +891,7 @@ enum _GridDragAxis { vertical, horizontal }
 
 class _AdjustableFacadeGrid extends ConsumerStatefulWidget {
   const _AdjustableFacadeGrid({
+    super.key,
     required this.projectId,
     required this.facade,
     required this.selectedMarkerTool,
