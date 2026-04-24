@@ -13,6 +13,7 @@ import '../project_session/state/project_session_controller.dart';
 import 'facade_standing_height_input_parser.dart';
 import 'state/facade_grid_adjustment_controller.dart';
 import 'state/facade_grid_generation_controller.dart';
+import 'state/facade_marker_editing_controller.dart';
 import 'state/facade_marker_placement_controller.dart';
 import 'state/facade_standing_height_controller.dart';
 
@@ -30,6 +31,7 @@ class _FacadeEditorScreenState extends ConsumerState<FacadeEditorScreen> {
   final _storeyHeightController = TextEditingController();
   final _standingHeightController = TextEditingController();
   FacadeMarkerType? _selectedMarkerTool;
+  String? _selectedMarkerId;
 
   String? _lastFacadeSideId;
   _FacadeFormSnapshot? _lastFacadeSnapshot;
@@ -74,6 +76,23 @@ class _FacadeEditorScreenState extends ConsumerState<FacadeEditorScreen> {
         final selectedFacade =
             hasSelected ? facades.firstWhere((facade) => facade.sideId == selectedSideId) : null;
         final activeFacade = selectedFacade ?? facades.first;
+        FacadeMarker? selectedMarker;
+        if (_selectedMarkerId != null) {
+          for (final marker in activeFacade.markers) {
+            if (marker.id == _selectedMarkerId) {
+              selectedMarker = marker;
+              break;
+            }
+          }
+        }
+        if (_selectedMarkerId != null && selectedMarker == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            setState(() {
+              _selectedMarkerId = null;
+            });
+          });
+        }
         final activeFacadeIndex = _activeFacadeIndex(
           facades: facades,
           activeFacadeSideId: activeFacade.sideId,
@@ -175,9 +194,13 @@ class _FacadeEditorScreenState extends ConsumerState<FacadeEditorScreen> {
                         projectId: project.projectId,
                         facade: activeFacade,
                         selectedMarkerTool: _selectedMarkerTool,
+                        selectedMarkerId: _selectedMarkerId,
                         onMarkerToolChanged: (tool) {
                           setState(() {
                             _selectedMarkerTool = tool;
+                            if (tool != null) {
+                              _selectedMarkerId = null;
+                            }
                           });
                         },
                         onMarkerPlaced: (localDx, localDy) => _placeMarker(
@@ -187,6 +210,38 @@ class _FacadeEditorScreenState extends ConsumerState<FacadeEditorScreen> {
                           localDx: localDx,
                           localDy: localDy,
                         ),
+                        onMarkerSelected: (markerId) {
+                          if (_selectedMarkerTool != null) return;
+                          setState(() {
+                            _selectedMarkerId = markerId;
+                          });
+                        },
+                        onSelectionCleared: () {
+                          setState(() {
+                            _selectedMarkerId = null;
+                          });
+                        },
+                        onMarkerMoved: (markerId, localDx, localDy) => _moveMarker(
+                          projectId: project.projectId,
+                          facadeSideId: activeFacade.sideId,
+                          markerId: markerId,
+                          localDx: localDx,
+                          localDy: localDy,
+                        ),
+                        onDeleteSelectedMarker: _selectedMarkerId == null
+                            ? null
+                            : () => _deleteMarker(
+                                  projectId: project.projectId,
+                                  facadeSideId: activeFacade.sideId,
+                                  markerId: _selectedMarkerId!,
+                                ),
+                        onEditSelectedTextNote: selectedMarker?.type == FacadeMarkerType.textNote
+                            ? () => _editTextNote(
+                                  projectId: project.projectId,
+                                  facadeSideId: activeFacade.sideId,
+                                  marker: selectedMarker!,
+                                )
+                            : null,
                       ),
                     ),
                   ],
@@ -308,6 +363,97 @@ class _FacadeEditorScreenState extends ConsumerState<FacadeEditorScreen> {
           markerType: markerType,
           localDx: localDx,
           localDy: localDy,
+        );
+
+    if (!mounted) return;
+    ref.invalidate(activeProjectDocumentProvider);
+    if (!result.isSuccess) {
+      _showMessage(result.message);
+    }
+  }
+
+  Future<void> _moveMarker({
+    required String projectId,
+    required String facadeSideId,
+    required String markerId,
+    required double localDx,
+    required double localDy,
+  }) async {
+    final result = await ref.read(facadeMarkerEditingControllerProvider).moveMarker(
+          projectId: projectId,
+          facadeSideId: facadeSideId,
+          markerId: markerId,
+          localDx: localDx,
+          localDy: localDy,
+        );
+
+    if (!mounted) return;
+    ref.invalidate(activeProjectDocumentProvider);
+    if (!result.isSuccess) {
+      _showMessage(result.message);
+    }
+  }
+
+  Future<void> _deleteMarker({
+    required String projectId,
+    required String facadeSideId,
+    required String markerId,
+  }) async {
+    final result = await ref.read(facadeMarkerEditingControllerProvider).deleteMarker(
+          projectId: projectId,
+          facadeSideId: facadeSideId,
+          markerId: markerId,
+        );
+
+    if (!mounted) return;
+    if (result.isSuccess) {
+      setState(() {
+        _selectedMarkerId = null;
+      });
+    }
+    ref.invalidate(activeProjectDocumentProvider);
+    if (!result.isSuccess) {
+      _showMessage(result.message);
+    }
+  }
+
+  Future<void> _editTextNote({
+    required String projectId,
+    required String facadeSideId,
+    required FacadeMarker marker,
+  }) async {
+    final textController = TextEditingController(text: marker.text ?? 'Note');
+    final updatedText = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit text note'),
+        content: TextField(
+          key: const ValueKey('facade-marker-text-input'),
+          controller: textController,
+          decoration: const InputDecoration(labelText: 'Note text'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: const ValueKey('facade-marker-save-edit-button'),
+            onPressed: () => Navigator.of(context).pop(textController.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    textController.dispose();
+    if (updatedText == null) return;
+
+    final result = await ref.read(facadeMarkerEditingControllerProvider).updateTextNote(
+          projectId: projectId,
+          facadeSideId: facadeSideId,
+          markerId: marker.id,
+          text: updatedText,
         );
 
     if (!mounted) return;
@@ -523,6 +669,7 @@ class _FacadeGenerationForm extends StatelessWidget {
 
 class _MarkerToolbar extends StatelessWidget {
   const _MarkerToolbar({
+    super.key,
     required this.selectedMarkerType,
     required this.onToolChanged,
   });
@@ -573,15 +720,27 @@ class _FacadeGridCard extends StatelessWidget {
     required this.projectId,
     required this.facade,
     required this.selectedMarkerTool,
+    required this.selectedMarkerId,
     required this.onMarkerToolChanged,
     required this.onMarkerPlaced,
+    required this.onMarkerSelected,
+    required this.onSelectionCleared,
+    required this.onMarkerMoved,
+    required this.onDeleteSelectedMarker,
+    required this.onEditSelectedTextNote,
   });
 
   final String projectId;
   final FacadeDocument facade;
   final FacadeMarkerType? selectedMarkerTool;
+  final String? selectedMarkerId;
   final ValueChanged<FacadeMarkerType?> onMarkerToolChanged;
   final void Function(double localDx, double localDy) onMarkerPlaced;
+  final ValueChanged<String> onMarkerSelected;
+  final VoidCallback onSelectionCleared;
+  final void Function(String markerId, double localDx, double localDy) onMarkerMoved;
+  final VoidCallback? onDeleteSelectedMarker;
+  final VoidCallback? onEditSelectedTextNote;
 
   @override
   Widget build(BuildContext context) {
@@ -596,10 +755,19 @@ class _FacadeGridCard extends StatelessWidget {
             Text('Facade grid', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             _MarkerToolbar(
+              key: const ValueKey('facade-marker-toolbar'),
               selectedMarkerType: selectedMarkerTool,
               onToolChanged: onMarkerToolChanged,
             ),
             const SizedBox(height: 8),
+            if (selectedMarkerId != null && selectedMarkerTool == null) ...[
+              _MarkerActionBar(
+                onEditPressed: onEditSelectedTextNote,
+                onDeletePressed: onDeleteSelectedMarker,
+                onCancelPressed: onSelectionCleared,
+              ),
+              const SizedBox(height: 8),
+            ],
             if (!hasGrid)
               const Text(
                 'No grid generated yet for this facade side.',
@@ -618,7 +786,11 @@ class _FacadeGridCard extends StatelessWidget {
                   projectId: projectId,
                   facade: facade,
                   selectedMarkerTool: selectedMarkerTool,
+                  selectedMarkerId: selectedMarkerId,
                   onMarkerPlaced: onMarkerPlaced,
+                  onMarkerSelected: onMarkerSelected,
+                  onSelectionCleared: onSelectionCleared,
+                  onMarkerMoved: onMarkerMoved,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.surfaceContainerLow,
@@ -637,6 +809,43 @@ class _FacadeGridCard extends StatelessWidget {
   }
 }
 
+class _MarkerActionBar extends StatelessWidget {
+  const _MarkerActionBar({
+    required this.onEditPressed,
+    required this.onDeletePressed,
+    required this.onCancelPressed,
+  });
+
+  final VoidCallback? onEditPressed;
+  final VoidCallback? onDeletePressed;
+  final VoidCallback onCancelPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      key: const ValueKey('facade-marker-action-bar'),
+      spacing: 8,
+      children: [
+        OutlinedButton(
+          key: const ValueKey('facade-marker-edit-button'),
+          onPressed: onEditPressed,
+          child: const Text('Edit'),
+        ),
+        FilledButton.tonal(
+          key: const ValueKey('facade-marker-delete-button'),
+          onPressed: onDeletePressed,
+          child: const Text('Delete'),
+        ),
+        TextButton(
+          key: const ValueKey('facade-marker-cancel-selection-button'),
+          onPressed: onCancelPressed,
+          child: const Text('Cancel'),
+        ),
+      ],
+    );
+  }
+}
+
 class _FacadeGridPainter extends CustomPainter {
   const _FacadeGridPainter({
     required this.sections,
@@ -645,6 +854,7 @@ class _FacadeGridPainter extends CustomPainter {
     required this.topZoneM,
     required this.lineColor,
     required this.markers,
+    required this.selectedMarkerId,
     this.activeVerticalDividerIndex,
     this.activeHorizontalDividerIndex,
   });
@@ -655,6 +865,7 @@ class _FacadeGridPainter extends CustomPainter {
   final double topZoneM;
   final Color lineColor;
   final List<FacadeMarker> markers;
+  final String? selectedMarkerId;
   final int? activeVerticalDividerIndex;
   final int? activeHorizontalDividerIndex;
 
@@ -731,9 +942,24 @@ class _FacadeGridPainter extends CustomPainter {
 
   void _paintMarkers(Canvas canvas, Size size) {
     for (final marker in markers) {
-      final normalizedPosition = _resolveMarkerNormalizedPosition(marker);
+      final normalizedPosition = _resolveMarkerNormalizedPosition(
+        marker: marker,
+        sections: sections,
+        storeys: storeys,
+      );
       final dx = normalizedPosition.dx * size.width;
       final dy = normalizedPosition.dy * size.height;
+      if (marker.id == selectedMarkerId) {
+        final highlightPaint = Paint()
+          ..color = Colors.blue.withValues(alpha: 0.20)
+          ..style = PaintingStyle.fill;
+        final borderPaint = Paint()
+          ..color = Colors.blue
+          ..strokeWidth = 2
+          ..style = PaintingStyle.stroke;
+        canvas.drawCircle(Offset(dx, dy), 15, highlightPaint);
+        canvas.drawCircle(Offset(dx, dy), 15, borderPaint);
+      }
       switch (marker.type) {
         case FacadeMarkerType.console:
           _drawConsole(canvas, Offset(dx, dy));
@@ -752,57 +978,6 @@ class _FacadeGridPainter extends CustomPainter {
           break;
       }
     }
-  }
-
-  Offset _resolveMarkerNormalizedPosition(FacadeMarker marker) {
-    final localDx = marker.localDx;
-    final localDy = marker.localDy;
-    final normalizedDx =
-        localDx?.clamp(0.0, 1.0).toDouble() ?? _normalizedSectionCenter(marker.sectionIndex);
-    final normalizedDy =
-        localDy?.clamp(0.0, 1.0).toDouble() ?? _normalizedStoreyCenterFromTop(marker.storeyIndex);
-    return Offset(normalizedDx, normalizedDy);
-  }
-
-  double _normalizedSectionCenter(int sectionIndex) {
-    final totalSectionWidth = sections.fold<double>(
-      0,
-      (sum, section) => sum + section.widthM,
-    );
-    if (totalSectionWidth <= 0 || sections.isEmpty) {
-      return 0.5;
-    }
-
-    final clampedIndex = sectionIndex.clamp(0, sections.length - 1);
-    final leadingWidth = sections
-        .take(clampedIndex)
-        .fold<double>(0, (sum, section) => sum + section.widthM);
-    final currentWidth = sections[clampedIndex].widthM;
-    final center = leadingWidth + (currentWidth / 2);
-    return (center / totalSectionWidth).clamp(0.0, 1.0);
-  }
-
-  double _normalizedStoreyCenterFromTop(int storeyIndex) {
-    final totalStoreyHeight = storeys.fold<double>(
-      0,
-      (sum, storey) => sum + storey.heightM,
-    );
-    if (totalStoreyHeight <= 0 || storeys.isEmpty) {
-      return 0.5;
-    }
-
-    final clampedIndex = storeyIndex.clamp(0, storeys.length - 1);
-    final storeysFromTop = storeys.reversed.toList(growable: false);
-    final clampedTopIndex = (storeysFromTop.length - 1 - clampedIndex).clamp(
-      0,
-      storeysFromTop.length - 1,
-    );
-    final aboveHeight = storeysFromTop
-        .take(clampedTopIndex)
-        .fold<double>(0, (sum, storey) => sum + storey.heightM);
-    final currentHeight = storeysFromTop[clampedTopIndex].heightM;
-    final center = aboveHeight + (currentHeight / 2);
-    return (center / totalStoreyHeight).clamp(0.0, 1.0);
   }
 
   void _drawConsole(Canvas canvas, Offset center) {
@@ -882,9 +1057,65 @@ class _FacadeGridPainter extends CustomPainter {
         oldDelegate.topZoneM != topZoneM ||
         oldDelegate.lineColor != lineColor ||
         oldDelegate.markers != markers ||
+        oldDelegate.selectedMarkerId != selectedMarkerId ||
         oldDelegate.activeVerticalDividerIndex != activeVerticalDividerIndex ||
         oldDelegate.activeHorizontalDividerIndex != activeHorizontalDividerIndex;
   }
+}
+
+Offset _resolveMarkerNormalizedPosition({
+  required FacadeMarker marker,
+  required List<FacadeSection> sections,
+  required List<FacadeStorey> storeys,
+}) {
+  final localDx = marker.localDx;
+  final localDy = marker.localDy;
+  final normalizedDx =
+      localDx?.clamp(0.0, 1.0).toDouble() ?? _normalizedSectionCenter(sections, marker.sectionIndex);
+  final normalizedDy = localDy?.clamp(0.0, 1.0).toDouble() ??
+      _normalizedStoreyCenterFromTop(storeys, marker.storeyIndex);
+  return Offset(normalizedDx, normalizedDy);
+}
+
+double _normalizedSectionCenter(List<FacadeSection> sections, int sectionIndex) {
+  final totalSectionWidth = sections.fold<double>(
+    0,
+    (sum, section) => sum + section.widthM,
+  );
+  if (totalSectionWidth <= 0 || sections.isEmpty) {
+    return 0.5;
+  }
+
+  final clampedIndex = sectionIndex.clamp(0, sections.length - 1);
+  final leadingWidth = sections
+      .take(clampedIndex)
+      .fold<double>(0, (sum, section) => sum + section.widthM);
+  final currentWidth = sections[clampedIndex].widthM;
+  final center = leadingWidth + (currentWidth / 2);
+  return (center / totalSectionWidth).clamp(0.0, 1.0);
+}
+
+double _normalizedStoreyCenterFromTop(List<FacadeStorey> storeys, int storeyIndex) {
+  final totalStoreyHeight = storeys.fold<double>(
+    0,
+    (sum, storey) => sum + storey.heightM,
+  );
+  if (totalStoreyHeight <= 0 || storeys.isEmpty) {
+    return 0.5;
+  }
+
+  final clampedIndex = storeyIndex.clamp(0, storeys.length - 1);
+  final storeysFromTop = storeys.reversed.toList(growable: false);
+  final clampedTopIndex = (storeysFromTop.length - 1 - clampedIndex).clamp(
+    0,
+    storeysFromTop.length - 1,
+  );
+  final aboveHeight = storeysFromTop
+      .take(clampedTopIndex)
+      .fold<double>(0, (sum, storey) => sum + storey.heightM);
+  final currentHeight = storeysFromTop[clampedTopIndex].heightM;
+  final center = aboveHeight + (currentHeight / 2);
+  return (center / totalStoreyHeight).clamp(0.0, 1.0);
 }
 
 enum _GridDragAxis { vertical, horizontal }
@@ -895,14 +1126,22 @@ class _AdjustableFacadeGrid extends ConsumerStatefulWidget {
     required this.projectId,
     required this.facade,
     required this.selectedMarkerTool,
+    required this.selectedMarkerId,
     required this.onMarkerPlaced,
+    required this.onMarkerSelected,
+    required this.onSelectionCleared,
+    required this.onMarkerMoved,
     required this.child,
   });
 
   final String projectId;
   final FacadeDocument facade;
   final FacadeMarkerType? selectedMarkerTool;
+  final String? selectedMarkerId;
   final void Function(double localDx, double localDy) onMarkerPlaced;
+  final ValueChanged<String> onMarkerSelected;
+  final VoidCallback onSelectionCleared;
+  final void Function(String markerId, double localDx, double localDy) onMarkerMoved;
   final Widget child;
 
   @override
@@ -949,28 +1188,83 @@ class _AdjustableFacadeGridState extends ConsumerState<_AdjustableFacadeGrid> {
           onPanEnd: (_) => _onPanEnd(),
           onPanCancel: _onPanCancel,
           onTapUp: (details) => _onTapUp(details.localPosition, size),
-          child: CustomPaint(
-            painter: _FacadeGridPainter(
-              sections: _previewSections,
-              storeys: _previewStoreys,
-              standingHeightM: widget.facade.standingHeightM,
-              topZoneM: widget.facade.topZoneM,
-              lineColor: Theme.of(context).colorScheme.onSurface,
-              markers: widget.facade.markers,
-              activeVerticalDividerIndex:
-                  _dragAxis == _GridDragAxis.vertical ? _activeDividerIndex : null,
-              activeHorizontalDividerIndex:
-                  _dragAxis == _GridDragAxis.horizontal ? _activeDividerIndex : null,
-            ),
-            child: widget.child,
+          child: Stack(
+            children: [
+              CustomPaint(
+                painter: _FacadeGridPainter(
+                  sections: _previewSections,
+                  storeys: _previewStoreys,
+                  standingHeightM: widget.facade.standingHeightM,
+                  topZoneM: widget.facade.topZoneM,
+                  lineColor: Theme.of(context).colorScheme.onSurface,
+                  markers: widget.facade.markers,
+                  selectedMarkerId: widget.selectedMarkerId,
+                  activeVerticalDividerIndex:
+                      _dragAxis == _GridDragAxis.vertical ? _activeDividerIndex : null,
+                  activeHorizontalDividerIndex:
+                      _dragAxis == _GridDragAxis.horizontal ? _activeDividerIndex : null,
+                ),
+                child: widget.child,
+              ),
+              ..._buildMarkerHitTargets(size),
+            ],
           ),
         );
       },
     );
   }
 
+  List<Widget> _buildMarkerHitTargets(Size size) {
+    if (widget.facade.markers.isEmpty || size.width <= 0 || size.height <= 0) {
+      return const [];
+    }
+
+    return [
+      for (final marker in widget.facade.markers)
+        Positioned(
+          left: (_resolveMarkerNormalizedPosition(
+                    marker: marker,
+                    sections: _previewSections,
+                    storeys: _previewStoreys,
+                  ).dx *
+                  size.width) -
+              22,
+          top: (_resolveMarkerNormalizedPosition(
+                    marker: marker,
+                    sections: _previewSections,
+                    storeys: _previewStoreys,
+                  ).dy *
+                  size.height) -
+              22,
+          width: 44,
+          height: 44,
+          child: GestureDetector(
+            key: ValueKey('facade-marker-hit-${marker.id}'),
+            behavior: HitTestBehavior.translucent,
+            onTap: () {
+              if (widget.selectedMarkerTool != null) return;
+              widget.onMarkerSelected(marker.id);
+            },
+            onPanUpdate: widget.selectedMarkerTool != null || widget.selectedMarkerId != marker.id
+                ? null
+                : (details) {
+                    final renderObject = context.findRenderObject();
+                    if (renderObject is! RenderBox) return;
+                    final localPosition = renderObject.globalToLocal(details.globalPosition);
+                    final localDx = (localPosition.dx / size.width).clamp(0.0, 1.0).toDouble();
+                    final localDy = (localPosition.dy / size.height).clamp(0.0, 1.0).toDouble();
+                    widget.onMarkerMoved(marker.id, localDx, localDy);
+                  },
+          ),
+        ),
+    ];
+  }
+
   void _onTapUp(Offset localPosition, Size size) {
-    if (widget.selectedMarkerTool == null) return;
+    if (widget.selectedMarkerTool == null) {
+      widget.onSelectionCleared();
+      return;
+    }
     if (size.width <= 0 || size.height <= 0) return;
     final localDx = (localPosition.dx / size.width).clamp(0.0, 1.0).toDouble();
     final localDy = (localPosition.dy / size.height).clamp(0.0, 1.0).toDouble();
