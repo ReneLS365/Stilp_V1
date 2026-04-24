@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stilp_v1/src/app/state/app_shell_controller.dart';
 import 'package:stilp_v1/src/core/models/facade_document.dart';
+import 'package:stilp_v1/src/core/models/facade_marker.dart';
 import 'package:stilp_v1/src/core/models/facade_section.dart';
 import 'package:stilp_v1/src/core/models/facade_storey.dart';
 import 'package:stilp_v1/src/core/models/plan_side.dart';
@@ -464,6 +465,95 @@ void main() {
     await _scrollToSection(tester, const ValueKey('facade-metadata-card'), delta: const Offset(0, 200));
     expect(_readKeyedText(const ValueKey('standing-height-label'), tester), 'Standing height: 3.20 m');
     expect(_readKeyedText(const ValueKey('top-zone-label'), tester), 'Top zone: 1.00 m');
+  });
+
+  testWidgets('marker placement is facade-specific and text note gets default payload', (
+    tester,
+  ) async {
+    final store = InMemoryProjectStore();
+    const projectId = 'project-markers';
+    await store.saveProject(
+      ProjectDocument.empty(
+        projectId: projectId,
+        taskType: 'Facade test',
+        now: DateTime.utc(2026, 4, 23, 10, 0),
+      ).copyWith(
+        facades: const [
+          FacadeDocument(
+            sideId: 'e1',
+            label: 'Side 1',
+            planEdgeId: 'e1',
+            sideOrder: 0,
+            edgeLengthMm: 2000,
+            sideType: PlanSideType.langside,
+            eavesHeightMm: null,
+            ridgeHeightMm: null,
+            standingHeightM: null,
+            topZoneM: 1,
+            sections: [FacadeSection(id: 'sec-1', widthM: 1.5)],
+            storeys: [FacadeStorey(id: 'st-1', heightM: 2.0, kind: FacadeStoreyKind.main)],
+            markers: [],
+          ),
+          FacadeDocument(
+            sideId: 'e2',
+            label: 'Side 2',
+            planEdgeId: 'e2',
+            sideOrder: 1,
+            edgeLengthMm: 1800,
+            sideType: PlanSideType.gavl,
+            eavesHeightMm: null,
+            ridgeHeightMm: null,
+            standingHeightM: null,
+            topZoneM: 1,
+            sections: [FacadeSection(id: 'sec-1', widthM: 1.5)],
+            storeys: [FacadeStorey(id: 'st-1', heightM: 2.0, kind: FacadeStoreyKind.main)],
+            markers: [],
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          localProjectStoreProvider.overrideWithValue(store),
+          projectSessionControllerProvider.overrideWith(
+            (ref) => ProjectSessionController()..openProject(projectId),
+          ),
+        ],
+        child: const MaterialApp(home: Scaffold(body: FacadeEditorScreen())),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await _scrollToSection(tester, const ValueKey('facade-grid-card'));
+    await tester.tap(_keyedFinder(const ValueKey('marker-tool-console')));
+    await tester.pumpAndSettle();
+    await tester.tap(_keyedFinder(const ValueKey('facade-grid-canvas')));
+    await tester.pumpAndSettle();
+
+    var project = await store.getProject(projectId);
+    var side1 = project!.facades.firstWhere((facade) => facade.sideId == 'e1');
+    var side2 = project.facades.firstWhere((facade) => facade.sideId == 'e2');
+    expect(side1.markers, hasLength(1));
+    expect(side1.markers.single.type, FacadeMarkerType.console);
+    expect(side2.markers, isEmpty);
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Side 2'));
+    await tester.pumpAndSettle();
+    await _scrollToSection(tester, const ValueKey('facade-grid-card'));
+    await tester.tap(_keyedFinder(const ValueKey('marker-tool-text_note')));
+    await tester.pumpAndSettle();
+    await tester.tap(_keyedFinder(const ValueKey('facade-grid-canvas')));
+    await tester.pumpAndSettle();
+
+    project = await store.getProject(projectId);
+    side1 = project!.facades.firstWhere((facade) => facade.sideId == 'e1');
+    side2 = project.facades.firstWhere((facade) => facade.sideId == 'e2');
+    expect(side1.markers, hasLength(1));
+    expect(side2.markers, hasLength(1));
+    expect(side2.markers.single.type, FacadeMarkerType.textNote);
+    expect(side2.markers.single.text, 'Note');
   });
 }
 

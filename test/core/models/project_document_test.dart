@@ -61,6 +61,8 @@ void main() {
       type: FacadeMarkerType.ladderDeck,
       sectionIndex: 2,
       storeyIndex: 1,
+      localDx: 0.25,
+      localDy: 0.75,
       text: 'Access',
       meta: {'color': 'orange'},
     );
@@ -70,6 +72,8 @@ void main() {
     expect(json['type'], 'ladder_deck');
     expect(json['sectionIndex'], 2);
     expect(json['storeyIndex'], 1);
+    expect(json['localDx'], 0.25);
+    expect(json['localDy'], 0.75);
     expect(json.containsKey('sectionId'), isFalse);
     expect(json.containsKey('storeyId'), isFalse);
   });
@@ -123,6 +127,8 @@ void main() {
               type: FacadeMarkerType.textNote,
               sectionIndex: 0,
               storeyIndex: 0,
+              localDx: 0.1,
+              localDy: 0.9,
               text: 'North side note',
               meta: {'origin': 'manual'},
             ),
@@ -144,5 +150,7 @@ void main() {
     expect(restored.facades.single.markers.single.type, FacadeMarkerType.textNote);
     expect(restored.facades.single.markers.single.sectionIndex, 0);
     expect(restored.facades.single.markers.single.storeyIndex, 0);
+    expect(restored.facades.single.markers.single.localDx, 0.1);
+    expect(restored.facades.single.markers.single.localDy, 0.9);
   });
 }
