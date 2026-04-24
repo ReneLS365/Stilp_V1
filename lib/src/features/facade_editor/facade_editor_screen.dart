@@ -1241,10 +1241,11 @@ class _AdjustableFacadeGridState extends ConsumerState<_AdjustableFacadeGrid> {
           child: GestureDetector(
             key: ValueKey('facade-marker-hit-${marker.id}'),
             behavior: HitTestBehavior.translucent,
-            onTap: () {
-              if (widget.selectedMarkerTool != null) return;
-              widget.onMarkerSelected(marker.id);
-            },
+            onTap: widget.selectedMarkerTool != null
+                ? null
+                : () {
+                    widget.onMarkerSelected(marker.id);
+                  },
             onPanUpdate: widget.selectedMarkerTool != null || widget.selectedMarkerId != marker.id
                 ? null
                 : (details) {

@@ -556,6 +556,72 @@ void main() {
     expect(side2.markers.single.text, 'Note');
   });
 
+
+  testWidgets('placement tool can place marker even when tapping existing marker hit area', (tester) async {
+    final store = InMemoryProjectStore();
+    const projectId = 'project-marker-place-on-hit-target';
+    await store.saveProject(
+      ProjectDocument.empty(
+        projectId: projectId,
+        taskType: 'Facade test',
+        now: DateTime.utc(2026, 4, 24, 9, 0),
+      ).copyWith(
+        facades: const [
+          FacadeDocument(
+            sideId: 'e1',
+            label: 'Side 1',
+            planEdgeId: 'e1',
+            sideOrder: 0,
+            edgeLengthMm: 2000,
+            sideType: PlanSideType.langside,
+            eavesHeightMm: null,
+            ridgeHeightMm: null,
+            standingHeightM: null,
+            topZoneM: 1,
+            sections: [FacadeSection(id: 'sec-1', widthM: 1.0)],
+            storeys: [FacadeStorey(id: 'st-1', heightM: 2.0, kind: FacadeStoreyKind.main)],
+            markers: [
+              FacadeMarker(
+                id: 'm-existing',
+                type: FacadeMarkerType.console,
+                sectionIndex: 0,
+                storeyIndex: 0,
+                localDx: 0.5,
+                localDy: 0.5,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          localProjectStoreProvider.overrideWithValue(store),
+          projectSessionControllerProvider.overrideWith(
+            (ref) => ProjectSessionController()..openProject(projectId),
+          ),
+        ],
+        child: const MaterialApp(home: Scaffold(body: FacadeEditorScreen())),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await _scrollToSection(tester, const ValueKey('facade-grid-card'));
+    await tester.tap(_keyedFinder(const ValueKey('marker-tool-opening')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('facade-marker-hit-m-existing')));
+    await tester.pumpAndSettle();
+
+    final project = await store.getProject(projectId);
+    final markers = project!.facades.single.markers;
+    expect(markers, hasLength(2));
+    expect(markers.where((marker) => marker.id == 'm-existing'), hasLength(1));
+    expect(markers.where((marker) => marker.type == FacadeMarkerType.opening), hasLength(1));
+  });
+
   testWidgets('tapping marker selects it and allows edit and delete actions', (tester) async {
     final store = InMemoryProjectStore();
     const projectId = 'project-marker-select-actions';
