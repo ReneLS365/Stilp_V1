@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/state/app_shell_controller.dart';
 import '../../core/models/manual_packing_list_item.dart';
 import '../plan_view/state/plan_view_controller.dart';
 import '../project_session/state/project_session_controller.dart';
@@ -135,6 +136,7 @@ class ManualPackingListScreen extends ConsumerWidget {
 
             if (result.isSuccess) {
               ref.invalidate(activeProjectDocumentProvider);
+              ref.invalidate(projectsProvider);
               Navigator.of(context).pop();
             }
 
@@ -155,6 +157,7 @@ class ManualPackingListScreen extends ConsumerWidget {
 
     if (result.isSuccess) {
       ref.invalidate(activeProjectDocumentProvider);
+      ref.invalidate(projectsProvider);
     }
 
     ScaffoldMessenger.of(context)
@@ -206,6 +209,7 @@ class _ManualPackingItemFormState extends State<_ManualPackingItemForm> {
   late final TextEditingController _textController;
   late final TextEditingController _quantityController;
   late final TextEditingController _unitController;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -283,19 +287,35 @@ class _ManualPackingItemFormState extends State<_ManualPackingItemForm> {
               const Spacer(),
               FilledButton(
                 key: const ValueKey('manual-packing-list-save-button'),
-                onPressed: () {
-                  widget.onSave(
-                    _textController.text,
-                    _quantityController.text,
-                    _unitController.text,
-                  );
-                },
-                child: const Text('Gem'),
+                onPressed: _isSaving ? null : _handleSave,
+                child: Text(_isSaving ? 'Gemmer...' : 'Gem'),
               ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _handleSave() async {
+    if (_isSaving) return;
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      await widget.onSave(
+        _textController.text,
+        _quantityController.text,
+        _unitController.text,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
   }
 }
