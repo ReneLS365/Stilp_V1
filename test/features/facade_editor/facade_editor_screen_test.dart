@@ -555,6 +555,257 @@ void main() {
     expect(side2.markers.single.type, FacadeMarkerType.textNote);
     expect(side2.markers.single.text, 'Note');
   });
+
+
+  testWidgets('placement tool can place marker even when tapping existing marker hit area', (tester) async {
+    final store = InMemoryProjectStore();
+    const projectId = 'project-marker-place-on-hit-target';
+    await store.saveProject(
+      ProjectDocument.empty(
+        projectId: projectId,
+        taskType: 'Facade test',
+        now: DateTime.utc(2026, 4, 24, 9, 0),
+      ).copyWith(
+        facades: const [
+          FacadeDocument(
+            sideId: 'e1',
+            label: 'Side 1',
+            planEdgeId: 'e1',
+            sideOrder: 0,
+            edgeLengthMm: 2000,
+            sideType: PlanSideType.langside,
+            eavesHeightMm: null,
+            ridgeHeightMm: null,
+            standingHeightM: null,
+            topZoneM: 1,
+            sections: [FacadeSection(id: 'sec-1', widthM: 1.0)],
+            storeys: [FacadeStorey(id: 'st-1', heightM: 2.0, kind: FacadeStoreyKind.main)],
+            markers: [
+              FacadeMarker(
+                id: 'm-existing',
+                type: FacadeMarkerType.console,
+                sectionIndex: 0,
+                storeyIndex: 0,
+                localDx: 0.5,
+                localDy: 0.5,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          localProjectStoreProvider.overrideWithValue(store),
+          projectSessionControllerProvider.overrideWith(
+            (ref) => ProjectSessionController()..openProject(projectId),
+          ),
+        ],
+        child: const MaterialApp(home: Scaffold(body: FacadeEditorScreen())),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await _scrollToSection(tester, const ValueKey('facade-grid-card'));
+    await tester.tap(_keyedFinder(const ValueKey('marker-tool-opening')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('facade-marker-hit-m-existing')));
+    await tester.pumpAndSettle();
+
+    final project = await store.getProject(projectId);
+    final markers = project!.facades.single.markers;
+    expect(markers, hasLength(2));
+    expect(markers.where((marker) => marker.id == 'm-existing'), hasLength(1));
+    expect(markers.where((marker) => marker.type == FacadeMarkerType.opening), hasLength(1));
+  });
+
+  testWidgets('tapping marker selects it and allows edit and delete actions', (tester) async {
+    final store = InMemoryProjectStore();
+    const projectId = 'project-marker-select-actions';
+    await store.saveProject(
+      ProjectDocument.empty(
+        projectId: projectId,
+        taskType: 'Facade test',
+        now: DateTime.utc(2026, 4, 24, 9, 0),
+      ).copyWith(
+        facades: const [
+          FacadeDocument(
+            sideId: 'e1',
+            label: 'Side 1',
+            planEdgeId: 'e1',
+            sideOrder: 0,
+            edgeLengthMm: 2000,
+            sideType: PlanSideType.langside,
+            eavesHeightMm: null,
+            ridgeHeightMm: null,
+            standingHeightM: null,
+            topZoneM: 1,
+            sections: [FacadeSection(id: 'sec-1', widthM: 1.0)],
+            storeys: [FacadeStorey(id: 'st-1', heightM: 2.0, kind: FacadeStoreyKind.main)],
+            markers: [
+              FacadeMarker(
+                id: 'm-note',
+                type: FacadeMarkerType.textNote,
+                sectionIndex: 0,
+                storeyIndex: 0,
+                localDx: 0.5,
+                localDy: 0.5,
+                text: 'Old',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          localProjectStoreProvider.overrideWithValue(store),
+          projectSessionControllerProvider.overrideWith(
+            (ref) => ProjectSessionController()..openProject(projectId),
+          ),
+        ],
+        child: const MaterialApp(home: Scaffold(body: FacadeEditorScreen())),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await _scrollToSection(tester, const ValueKey('facade-grid-card'));
+    await tester.tap(find.byKey(const ValueKey('facade-marker-hit-m-note')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('facade-marker-action-bar')), findsOneWidget);
+    expect(
+      tester.widget<OutlinedButton>(find.byKey(const ValueKey('facade-marker-edit-button'))).onPressed,
+      isNotNull,
+    );
+    expect(
+      tester.widget<FilledButton>(find.byKey(const ValueKey('facade-marker-delete-button'))).onPressed,
+      isNotNull,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('facade-marker-edit-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const ValueKey('facade-marker-text-input')), 'Updated note');
+    await tester.tap(find.byKey(const ValueKey('facade-marker-save-edit-button')));
+    await tester.pumpAndSettle();
+
+    var project = await store.getProject(projectId);
+    expect(project!.facades.single.markers.single.text, 'Updated note');
+    expect(find.byKey(const ValueKey('facade-marker-action-bar')), findsOneWidget);
+    expect(find.byKey(const ValueKey('facade-marker-delete-button')), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('facade-marker-delete-button')));
+    await tester.pumpAndSettle();
+
+    project = await store.getProject(projectId);
+    expect(project!.facades.single.markers, isEmpty);
+    expect(find.byKey(const ValueKey('facade-marker-action-bar')), findsNothing);
+  });
+
+  testWidgets('dragging selected marker persists new position on active facade only', (tester) async {
+    final store = InMemoryProjectStore();
+    const projectId = 'project-marker-drag';
+    await store.saveProject(
+      ProjectDocument.empty(
+        projectId: projectId,
+        taskType: 'Facade test',
+        now: DateTime.utc(2026, 4, 24, 9, 0),
+      ).copyWith(
+        facades: const [
+          FacadeDocument(
+            sideId: 'e1',
+            label: 'Side 1',
+            planEdgeId: 'e1',
+            sideOrder: 0,
+            edgeLengthMm: 2000,
+            sideType: PlanSideType.langside,
+            eavesHeightMm: null,
+            ridgeHeightMm: null,
+            standingHeightM: null,
+            topZoneM: 1,
+            sections: [FacadeSection(id: 'sec-1', widthM: 1.0)],
+            storeys: [FacadeStorey(id: 'st-1', heightM: 2.0, kind: FacadeStoreyKind.main)],
+            markers: [
+              FacadeMarker(
+                id: 'm-move',
+                type: FacadeMarkerType.console,
+                sectionIndex: 0,
+                storeyIndex: 0,
+                localDx: 0.2,
+                localDy: 0.2,
+              ),
+            ],
+          ),
+          FacadeDocument(
+            sideId: 'e2',
+            label: 'Side 2',
+            planEdgeId: 'e2',
+            sideOrder: 1,
+            edgeLengthMm: 2000,
+            sideType: PlanSideType.gavl,
+            eavesHeightMm: null,
+            ridgeHeightMm: null,
+            standingHeightM: null,
+            topZoneM: 1,
+            sections: [FacadeSection(id: 'sec-1', widthM: 1.0)],
+            storeys: [FacadeStorey(id: 'st-1', heightM: 2.0, kind: FacadeStoreyKind.main)],
+            markers: [
+              FacadeMarker(
+                id: 'm-other',
+                type: FacadeMarkerType.opening,
+                sectionIndex: 0,
+                storeyIndex: 0,
+                localDx: 0.7,
+                localDy: 0.7,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          localProjectStoreProvider.overrideWithValue(store),
+          projectSessionControllerProvider.overrideWith(
+            (ref) => ProjectSessionController()..openProject(projectId),
+          ),
+        ],
+        child: const MaterialApp(home: Scaffold(body: FacadeEditorScreen())),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await _scrollToSection(tester, const ValueKey('facade-grid-card'));
+    final hitFinder = find.byKey(const ValueKey('facade-marker-hit-m-move'));
+    await tester.tap(hitFinder);
+    await tester.pumpAndSettle();
+    await tester.drag(hitFinder, const Offset(120, 40));
+    await tester.pumpAndSettle();
+
+    var project = await store.getProject(projectId);
+    final moved = project!.facades.firstWhere((facade) => facade.sideId == 'e1').markers.single;
+    final other = project.facades.firstWhere((facade) => facade.sideId == 'e2').markers.single;
+    expect(moved.localDx, greaterThan(0.2));
+    expect(moved.localDy, greaterThan(0.2));
+    expect(other.localDx, closeTo(0.7, 0.0001));
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Side 2'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('facade-marker-action-bar')), findsNothing);
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Side 1'));
+    await tester.pumpAndSettle();
+    project = await store.getProject(projectId);
+    final movedAfterSwitch = project!.facades.firstWhere((facade) => facade.sideId == 'e1').markers.single;
+    expect(movedAfterSwitch.localDx, greaterThan(0.2));
+  });
 }
 
 Finder _verticalListViewFinder() => find.byKey(const ValueKey('facade-editor-vertical-scroll'));
