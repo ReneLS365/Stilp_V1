@@ -118,7 +118,7 @@ void main() {
     );
 
     final reloadedStore = FileLocalProjectStore(
-      projectsDirectory: Directory('${seeded.projectsDirectory.path}'),
+      projectsDirectory: seeded.projectsDirectory,
     );
     final project = await reloadedStore.getProject('marker-reload');
 
