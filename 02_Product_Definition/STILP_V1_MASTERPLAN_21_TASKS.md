@@ -79,7 +79,7 @@ Det betyder:
 - T12 er merged via PR #13
 - T13 er merged via PR #15
 - T14 er merged via PR #17
-- T15 er implementeret med visuel markørplacering og lokal persistens
+- T15 er merged via PR #19 med visuel markørplacering og lokal persistens
 - T16 er næste aktive task
 
 ---
@@ -373,6 +373,7 @@ Mål: brugbart output og basal robusthed.
 ## T15 — Visual markers
 - Fase: 5
 - Status: done
+- Repo-note: merged via PR #19
 - Mål: placere visuelle markører i facaden
 - Indhold:
   - console
