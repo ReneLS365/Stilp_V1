@@ -48,11 +48,11 @@ Brug kun disse statustyper:
 ## Fremdrift
 - Total tasks: 21
 - Fase 0 setup: done
-- Done: 15
+- Done: 16
 - Active: 1
-- Planned: 5
+- Planned: 4
 - Aktuel fase: Fase 5
-- Aktuel fokus: T16
+- Aktuel fokus: T17
 
 ## Aktuel repo-status
 Repoet indeholder allerede:
@@ -80,7 +80,8 @@ Det betyder:
 - T13 er merged via PR #15
 - T14 er merged via PR #17
 - T15 er merged via PR #19 med visuel markørplacering og lokal persistens
-- T16 er næste aktive task
+- T16 er merged via PR #21 med marker editing, move, edit og delete
+- T17 er næste aktive task
 
 ---
 
@@ -388,7 +389,8 @@ Mål: brugbart output og basal robusthed.
 
 ## T16 — Marker editing
 - Fase: 5
-- Status: active
+- Status: done
+- Repo-note: merged via PR #21
 - Mål: redigere markører
 - Indhold:
   - move
@@ -400,7 +402,7 @@ Mål: brugbart output og basal robusthed.
 
 ## T17 — Manual packing list
 - Fase: 5
-- Status: planned
+- Status: active
 - Mål: manuel pakkeliste uden BOM
 - Indhold:
   - line items
