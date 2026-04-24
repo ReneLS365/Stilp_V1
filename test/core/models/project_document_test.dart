@@ -152,5 +152,10 @@ void main() {
     expect(restored.facades.single.markers.single.storeyIndex, 0);
     expect(restored.facades.single.markers.single.localDx, 0.1);
     expect(restored.facades.single.markers.single.localDy, 0.9);
+    expect(restored.manualPackingList, hasLength(1));
+    expect(restored.manualPackingList.single.id, 'pack-1');
+    expect(restored.manualPackingList.single.text, 'Diagonal braces');
+    expect(restored.manualPackingList.single.quantity, 8);
+    expect(restored.manualPackingList.single.unit, 'pcs');
   });
 }
