@@ -422,31 +422,12 @@ class _FacadeEditorScreenState extends ConsumerState<FacadeEditorScreen> {
     required String facadeSideId,
     required FacadeMarker marker,
   }) async {
-    final textController = TextEditingController(text: marker.text ?? 'Note');
     final updatedText = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit text note'),
-        content: TextField(
-          key: const ValueKey('facade-marker-text-input'),
-          controller: textController,
-          decoration: const InputDecoration(labelText: 'Note text'),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            key: const ValueKey('facade-marker-save-edit-button'),
-            onPressed: () => Navigator.of(context).pop(textController.text),
-            child: const Text('Save'),
-          ),
-        ],
+      builder: (_) => _MarkerTextNoteEditDialog(
+        initialText: marker.text ?? 'Note',
       ),
     );
-    textController.dispose();
     if (updatedText == null) return;
 
     final result = await ref.read(facadeMarkerEditingControllerProvider).updateTextNote(
@@ -461,6 +442,63 @@ class _FacadeEditorScreenState extends ConsumerState<FacadeEditorScreen> {
     if (!result.isSuccess) {
       _showMessage(result.message);
     }
+  }
+}
+
+class _MarkerTextNoteEditDialog extends StatefulWidget {
+  const _MarkerTextNoteEditDialog({
+    required this.initialText,
+  });
+
+  final String initialText;
+
+  @override
+  State<_MarkerTextNoteEditDialog> createState() => _MarkerTextNoteEditDialogState();
+}
+
+class _MarkerTextNoteEditDialogState extends State<_MarkerTextNoteEditDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialText);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit text note'),
+      content: TextField(
+        key: const ValueKey('facade-marker-text-input'),
+        controller: _controller,
+        decoration: const InputDecoration(labelText: 'Note text'),
+        autofocus: true,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            FocusScope.of(context).unfocus();
+            Navigator.of(context).pop();
+          },
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          key: const ValueKey('facade-marker-save-edit-button'),
+          onPressed: () {
+            FocusScope.of(context).unfocus();
+            Navigator.of(context).pop(_controller.text);
+          },
+          child: const Text('Save'),
+        ),
+      ],
+    );
   }
 }
 

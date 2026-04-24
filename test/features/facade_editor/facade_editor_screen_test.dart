@@ -696,6 +696,8 @@ void main() {
 
     var project = await store.getProject(projectId);
     expect(project!.facades.single.markers.single.text, 'Updated note');
+    expect(find.byKey(const ValueKey('facade-marker-action-bar')), findsOneWidget);
+    expect(find.byKey(const ValueKey('facade-marker-delete-button')), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('facade-marker-delete-button')));
     await tester.pumpAndSettle();
