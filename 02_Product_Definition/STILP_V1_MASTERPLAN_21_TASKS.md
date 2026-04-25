@@ -52,9 +52,10 @@ Brug kun disse statustyper:
 - Fase 0 setup: done
 - Done: 19
 - Active: 1
-- Planned: 3
+- Review: 1
+- Planned: 2
 - Aktuel fase: Fase 6
-- Aktuel fokus: T20
+- Aktuel fokus: T20 + T21 review
 
 ## Aktuel repo-status
 Repoet indeholder allerede:
@@ -491,7 +492,7 @@ Mål: afsluttende polish og baseline-test efter release-distribution.
 
 ## T21 — Android APK distribution
 - Fase: 7
-- Status: planned
+- Status: review
 - Mål: bygge og distribuere en installerbar Android APK til intern brug og feltbrug
 - Indhold:
   - Flutter Android release build
