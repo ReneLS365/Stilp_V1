@@ -50,12 +50,11 @@ Brug kun disse statustyper:
 ## Fremdrift
 - Total tasks: 23
 - Fase 0 setup: done
-- Done: 19
+- Done: 21
 - Active: 1
-- Review: 1
-- Planned: 2
-- Aktuel fase: Fase 6
-- Aktuel fokus: T20 + T21 review
+- Planned: 1
+- Aktuel fase: Fase 7
+- Aktuel fokus: T22
 
 ## Aktuel repo-status
 Repoet indeholder allerede:
@@ -87,8 +86,9 @@ Det betyder:
 - T17 er merged via PR #23 med manuel pakkeliste uden BOM
 - T18 er merged via PR #25 med samlet eksport-preview
 - T19 er merged via PR #27 med lokal PDF-eksport
-- T20 er aktiv task
-- T21 og T22 er låst som fast release-distribution før afsluttende polish
+- T20 er merged via PR #29 med lokal billedeksport
+- T21 er merged via PR #31 med Android APK-distribution
+- T22 er næste aktive task
 - T23 er planned som sidste polish- og baseline-test task
 
 ---
@@ -481,7 +481,8 @@ Mål: afsluttende polish og baseline-test efter release-distribution.
 
 ## T20 — Image export
 - Fase: 6
-- Status: active
+- Status: done
+- Repo-note: merged via PR #29
 - Mål: eksportere billede
 - Indhold:
   - image output
@@ -492,7 +493,8 @@ Mål: afsluttende polish og baseline-test efter release-distribution.
 
 ## T21 — Android APK distribution
 - Fase: 7
-- Status: review
+- Status: done
+- Repo-note: merged via PR #31
 - Mål: bygge og distribuere en installerbar Android APK til intern brug og feltbrug
 - Indhold:
   - Flutter Android release build
@@ -510,7 +512,7 @@ Mål: afsluttende polish og baseline-test efter release-distribution.
 
 ## T22 — iOS installable distribution
 - Fase: 7
-- Status: planned
+- Status: active
 - Mål: bygge og distribuere en installerbar iOS-version til iPhone
 - Indhold:
   - Flutter iOS release build
@@ -594,7 +596,5 @@ Når en Codex-opgave er merged:
 4. opdatér fremdriftstal øverst
 
 # Aktuel anbefalet startordre
-1. T20 Image export
-2. T21 Android APK distribution
-3. T22 iOS installable distribution
-4. T23 Polish and baseline tests
+1. T22 iOS installable distribution
+2. T23 Polish and baseline tests
