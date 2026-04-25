@@ -55,6 +55,12 @@ class ImageExportController extends StateNotifier<ImageExportState> {
       const result = ImageExportState(successMessage: 'Billede genereret.');
       state = result;
       return result;
+    } on ImageExportTooLargeException {
+      const result = ImageExportState(
+        errorMessage: ImageExportTooLargeException.userMessage,
+      );
+      state = result;
+      return result;
     } catch (_) {
       const result = ImageExportState(errorMessage: 'Kunne ikke generere billede.');
       state = result;

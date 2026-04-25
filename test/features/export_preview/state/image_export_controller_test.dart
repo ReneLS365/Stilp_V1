@@ -91,16 +91,38 @@ void main() {
     expect(identical(result, controller.state), isTrue);
     expect(result.successMessage, 'Billede genereret.');
   });
+
+  test('export surfaces clear message for oversized image exports', () async {
+    final controller = ImageExportController(
+      builder: _FakeProjectImageBuilder(error: const ImageExportTooLargeException()),
+      gateway: _FakeImageExportGateway(),
+      now: () => DateTime.utc(2026, 4, 25, 9, 0),
+    );
+    final project = ProjectDocument.empty(
+      projectId: 'project-too-large',
+      taskType: 'Stillads',
+      now: DateTime.utc(2026, 4, 25, 8, 0),
+    );
+
+    final result = await controller.exportActiveProject(project);
+
+    expect(result.errorMessage, ImageExportTooLargeException.userMessage);
+    expect(result.successMessage, isNull);
+  });
 }
 
 class _FakeProjectImageBuilder extends ProjectImageBuilder {
-  _FakeProjectImageBuilder({Uint8List? result})
+  _FakeProjectImageBuilder({Uint8List? result, this.error})
       : _result = result ?? Uint8List.fromList([0x89, 0x50, 0x4E, 0x47, 9, 9]);
 
   final Uint8List _result;
+  final Exception? error;
 
   @override
   Future<Uint8List> build(ProjectDocument project) async {
+    if (error != null) {
+      throw error!;
+    }
     return _result;
   }
 }

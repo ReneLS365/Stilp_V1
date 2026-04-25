@@ -94,6 +94,16 @@ void main() {
     expect(bytes, isNotEmpty);
   });
 
+  test('throws clear exception when calculated image height exceeds max', () async {
+    final builder = ProjectImageBuilder();
+    final oversizedNotes = List.filled(7000, 'Lang note linje for eksport').join('\n');
+
+    expect(
+      () => builder.build(_buildProject().copyWith(notes: oversizedNotes)),
+      throwsA(isA<ImageExportTooLargeException>()),
+    );
+  });
+
   test('standing height and top zone data do not crash builder', () async {
     final builder = ProjectImageBuilder();
 

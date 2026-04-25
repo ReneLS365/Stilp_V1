@@ -10,6 +10,7 @@ import '../../../core/models/project_document.dart';
 
 class ProjectImageBuilder {
   static const double _imageWidth = 1080;
+  static const int _maxImageHeight = 30000;
   static const double _outerPadding = 48;
   static const double _sectionPadding = 24;
   static const double _sectionSpacing = 24;
@@ -69,7 +70,10 @@ class ProjectImageBuilder {
         sectionsHeight +
         (_sectionSpacing * (measuredSections.length - 1)) +
         _outerPadding;
-    final imageHeight = calculatedHeight.ceil().clamp(1, 30000).toInt();
+    final imageHeight = calculatedHeight.ceil();
+    if (imageHeight > _maxImageHeight) {
+      throw const ImageExportTooLargeException();
+    }
 
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(
@@ -201,6 +205,13 @@ class ProjectImageBuilder {
     }
     return lines;
   }
+}
+
+class ImageExportTooLargeException implements Exception {
+  const ImageExportTooLargeException();
+
+  static const String userMessage =
+      'Projektet er for stort til billede-eksport. Prøv PDF-eksport i stedet.';
 }
 
 class _SectionBlock {
