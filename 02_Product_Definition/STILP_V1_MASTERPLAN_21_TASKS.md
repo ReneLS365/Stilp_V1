@@ -50,12 +50,11 @@ Brug kun disse statustyper:
 ## Fremdrift
 - Total tasks: 23
 - Fase 0 setup: done
-- Done: 21
-- Active: 0
-- Review: 1
-- Planned: 1
-- Aktuel fase: Fase 7
-- Aktuel fokus: T22 (review)
+- Done: 22
+- Active: 1
+- Planned: 0
+- Aktuel fase: Fase 8
+- Aktuel fokus: T23
 
 ## Aktuel repo-status
 Repoet indeholder allerede:
@@ -89,8 +88,8 @@ Det betyder:
 - T19 er merged via PR #27 med lokal PDF-eksport
 - T20 er merged via PR #29 med lokal billedeksport
 - T21 er merged via PR #31 med Android APK-distribution
-- T22 er i review med iOS-installationsworkflow dokumenteret
-- T23 er planned som sidste polish- og baseline-test task
+- T22 er merged via PR #33 med iOS-installationsworkflow
+- T23 er næste aktive task
 
 ---
 
@@ -513,7 +512,8 @@ Mål: afsluttende polish og baseline-test efter release-distribution.
 
 ## T22 — iOS installable distribution
 - Fase: 7
-- Status: review
+- Status: done
+- Repo-note: merged via PR #33
 - Mål: bygge og distribuere en installerbar iOS-version til iPhone
 - Indhold:
   - Flutter iOS release build
@@ -531,7 +531,7 @@ Mål: afsluttende polish og baseline-test efter release-distribution.
 
 ## T23 — Polish and baseline tests
 - Fase: 8
-- Status: planned
+- Status: active
 - Mål: rydde de sidste fejl og sikre basisrobusthed efter release-distribution
 - Indhold:
   - grid logic tests
@@ -597,5 +597,4 @@ Når en Codex-opgave er merged:
 4. opdatér fremdriftstal øverst
 
 # Aktuel anbefalet startordre
-1. T22 iOS installable distribution
-2. T23 Polish and baseline tests
+1. T23 Polish and baseline tests
