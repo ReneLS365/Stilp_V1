@@ -83,8 +83,10 @@ String buildPdfFilename(String projectId, DateTime timestamp) {
   final day = timestamp.day.toString().padLeft(2, '0');
   final hour = timestamp.hour.toString().padLeft(2, '0');
   final minute = timestamp.minute.toString().padLeft(2, '0');
+  final datePart = '$year$month$day';
+  final timePart = '$hour$minute';
 
-  return 'stilp_${safeProjectId}_${year}${month}${day}_${hour}${minute}.pdf';
+  return 'stilp_${safeProjectId}_${datePart}_$timePart.pdf';
 }
 
 abstract class PdfExportGateway {
