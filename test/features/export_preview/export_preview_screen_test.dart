@@ -334,8 +334,11 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('export-preview-pdf-button')));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('export-preview-pdf-error')), findsOneWidget);
-    expect(find.text('Kunne ikke generere PDF.'), findsOneWidget);
+    final inlineError = find.byKey(const ValueKey('export-preview-pdf-error'));
+    expect(inlineError, findsOneWidget);
+    final errorText = tester.widget<Text>(inlineError);
+    expect(errorText.data, 'Kunne ikke generere PDF.');
+    expect(find.byType(SnackBar), findsOneWidget);
   });
 
   testWidgets('export action does not throw when screen is disposed during pending export', (
