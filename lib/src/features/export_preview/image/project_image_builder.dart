@@ -69,7 +69,7 @@ class ProjectImageBuilder {
         sectionsHeight +
         (_sectionSpacing * (measuredSections.length - 1)) +
         _outerPadding;
-    final imageHeight = calculatedHeight.ceil().clamp(1, 30000);
+    final imageHeight = calculatedHeight.ceil().clamp(1, 30000).toInt();
 
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(
