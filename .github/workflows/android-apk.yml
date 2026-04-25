@@ -43,6 +43,12 @@ jobs:
             flutter create --platforms=android .
           fi
 
+      - name: Remove generated Flutter template widget test
+        run: |
+          if [ -f "test/widget_test.dart" ] && grep -q "Counter increments smoke test" "test/widget_test.dart"; then
+            rm "test/widget_test.dart"
+          fi
+
       - name: Get dependencies
         run: flutter pub get
 
