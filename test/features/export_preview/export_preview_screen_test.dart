@@ -223,7 +223,11 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(home: ExportPreviewScreen()),
+        child: const MaterialApp(
+          home: Scaffold(
+            body: ExportPreviewScreen(),
+          ),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -301,6 +305,7 @@ void main() {
           ),
         ),
       ],
+      settle: false,
     );
 
     expect(find.byKey(const ValueKey('export-preview-pdf-loading')), findsOneWidget);
@@ -345,6 +350,7 @@ void main() {
     final controller = _TestPdfExportController(
       initialState: const PdfExportState(),
       onExport: (_) => completer.future,
+      writeStateAfterExport: false,
     );
 
     await tester.pumpWidget(
@@ -353,7 +359,11 @@ void main() {
           activeProjectDocumentProvider.overrideWith((ref) async => project),
           pdfExportControllerProvider.overrideWith((ref) => controller),
         ],
-        child: const MaterialApp(home: ExportPreviewScreen()),
+        child: const MaterialApp(
+          home: Scaffold(
+            body: ExportPreviewScreen(),
+          ),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -374,21 +384,31 @@ void main() {
 Future<void> _pumpScreen(
   WidgetTester tester, {
   required List<Override> overrides,
+  bool settle = true,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: overrides,
-      child: const MaterialApp(home: ExportPreviewScreen()),
+      child: const MaterialApp(
+        home: Scaffold(
+          body: ExportPreviewScreen(),
+        ),
+      ),
     ),
   );
 
-  await tester.pumpAndSettle();
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+  }
 }
 
 class _TestPdfExportController extends PdfExportController {
   _TestPdfExportController({
     required PdfExportState initialState,
     Future<PdfExportState> Function(ProjectDocument? project)? onExport,
+    this.writeStateAfterExport = true,
   })  : _onExport = onExport,
         super(
           builder: _NoopBuilder(),
@@ -399,6 +419,7 @@ class _TestPdfExportController extends PdfExportController {
   }
 
   final Future<PdfExportState> Function(ProjectDocument? project)? _onExport;
+  final bool writeStateAfterExport;
   int exportCalls = 0;
 
   @override
@@ -408,7 +429,9 @@ class _TestPdfExportController extends PdfExportController {
       return state;
     }
     final result = await _onExport(project);
-    state = result;
+    if (writeStateAfterExport) {
+      state = result;
+    }
     return result;
   }
 }

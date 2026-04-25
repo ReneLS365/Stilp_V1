@@ -55,7 +55,12 @@ class ExportPreviewScreen extends ConsumerWidget {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                   SizedBox(width: 8),
-                  Text('Genererer PDF...'),
+                  Expanded(
+                    child: Text(
+                      'Genererer PDF...',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
               ),
             ],
