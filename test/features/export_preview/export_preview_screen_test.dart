@@ -567,7 +567,6 @@ class _TestImageExportController extends ImageExportController {
   _TestImageExportController({
     required ImageExportState initialState,
     Future<ImageExportState> Function(ProjectDocument? project)? onExport,
-    this.writeStateAfterExport = true,
   })  : _onExport = onExport,
         super(
           builder: ProjectImageBuilder(),
@@ -578,7 +577,6 @@ class _TestImageExportController extends ImageExportController {
   }
 
   final Future<ImageExportState> Function(ProjectDocument? project)? _onExport;
-  final bool writeStateAfterExport;
   int exportCalls = 0;
 
   @override
@@ -588,9 +586,7 @@ class _TestImageExportController extends ImageExportController {
       return state;
     }
     final result = await _onExport(project);
-    if (writeStateAfterExport) {
-      state = result;
-    }
+    state = result;
     return result;
   }
 }
