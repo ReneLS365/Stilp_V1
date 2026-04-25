@@ -51,10 +51,11 @@ Brug kun disse statustyper:
 - Total tasks: 23
 - Fase 0 setup: done
 - Done: 21
-- Active: 1
+- Active: 0
+- Review: 1
 - Planned: 1
 - Aktuel fase: Fase 7
-- Aktuel fokus: T22
+- Aktuel fokus: T22 (review)
 
 ## Aktuel repo-status
 Repoet indeholder allerede:
@@ -88,7 +89,7 @@ Det betyder:
 - T19 er merged via PR #27 med lokal PDF-eksport
 - T20 er merged via PR #29 med lokal billedeksport
 - T21 er merged via PR #31 med Android APK-distribution
-- T22 er næste aktive task
+- T22 er i review med iOS-installationsworkflow dokumenteret
 - T23 er planned som sidste polish- og baseline-test task
 
 ---
@@ -512,7 +513,7 @@ Mål: afsluttende polish og baseline-test efter release-distribution.
 
 ## T22 — iOS installable distribution
 - Fase: 7
-- Status: active
+- Status: review
 - Mål: bygge og distribuere en installerbar iOS-version til iPhone
 - Indhold:
   - Flutter iOS release build
