@@ -13,7 +13,9 @@ import 'package:stilp_v1/src/core/models/plan_side.dart';
 import 'package:stilp_v1/src/core/models/plan_view_data.dart';
 import 'package:stilp_v1/src/core/models/project_document.dart';
 import 'package:stilp_v1/src/features/export_preview/export_preview_screen.dart';
+import 'package:stilp_v1/src/features/export_preview/image/project_image_builder.dart';
 import 'package:stilp_v1/src/features/export_preview/pdf/project_pdf_builder.dart';
+import 'package:stilp_v1/src/features/export_preview/state/image_export_controller.dart';
 import 'package:stilp_v1/src/features/export_preview/state/pdf_export_controller.dart';
 import 'package:stilp_v1/src/features/plan_view/state/plan_view_controller.dart';
 
@@ -262,6 +264,24 @@ void main() {
     expect(find.text('Eksportér PDF'), findsOneWidget);
   });
 
+  testWidgets('export preview shows image export button', (tester) async {
+    final project = ProjectDocument.empty(
+      projectId: 'project-image-button',
+      taskType: 'Stillads',
+      now: DateTime.utc(2026, 4, 25, 8, 0),
+    );
+
+    await _pumpScreen(
+      tester,
+      overrides: [
+        activeProjectDocumentProvider.overrideWith((ref) async => project),
+      ],
+    );
+
+    expect(find.byKey(const ValueKey('export-preview-image-button')), findsOneWidget);
+    expect(find.text('Eksportér billede'), findsOneWidget);
+  });
+
   testWidgets('tapping PDF export triggers export path and success state', (tester) async {
     final project = ProjectDocument.empty(
       projectId: 'project-pdf-export',
@@ -382,6 +402,103 @@ void main() {
 
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('tapping image export triggers export path and success state', (tester) async {
+    final project = ProjectDocument.empty(
+      projectId: 'project-image-export',
+      taskType: 'Stillads',
+      now: DateTime.utc(2026, 4, 25, 8, 0),
+    );
+    final controller = _TestImageExportController(
+      initialState: const ImageExportState(),
+      onExport: (_) async => const ImageExportState(successMessage: 'Billede genereret.'),
+    );
+
+    await _pumpScreen(
+      tester,
+      overrides: [
+        activeProjectDocumentProvider.overrideWith((ref) async => project),
+        imageExportControllerProvider.overrideWith((ref) => controller),
+      ],
+    );
+
+    await tester.tap(find.byKey(const ValueKey('export-preview-image-button')));
+    await tester.pumpAndSettle();
+
+    expect(controller.exportCalls, 1);
+    expect(find.byKey(const ValueKey('export-preview-image-success')), findsOneWidget);
+  });
+
+  testWidgets('loading state is shown while image export is pending', (tester) async {
+    final project = ProjectDocument.empty(
+      projectId: 'project-image-loading',
+      taskType: 'Stillads',
+      now: DateTime.utc(2026, 4, 25, 8, 0),
+    );
+
+    await _pumpScreen(
+      tester,
+      overrides: [
+        activeProjectDocumentProvider.overrideWith((ref) async => project),
+        imageExportControllerProvider.overrideWith(
+          (ref) => _TestImageExportController(
+            initialState: const ImageExportState(isLoading: true),
+          ),
+        ),
+      ],
+      settle: false,
+    );
+
+    expect(find.byKey(const ValueKey('export-preview-image-loading')), findsOneWidget);
+    expect(find.text('Genererer billede...'), findsOneWidget);
+  });
+
+  testWidgets('image export failure shows clear error message', (tester) async {
+    final project = ProjectDocument.empty(
+      projectId: 'project-image-error',
+      taskType: 'Stillads',
+      now: DateTime.utc(2026, 4, 25, 8, 0),
+    );
+    final controller = _TestImageExportController(
+      initialState: const ImageExportState(),
+      onExport: (_) async =>
+          const ImageExportState(errorMessage: 'Kunne ikke generere billede.'),
+    );
+
+    await _pumpScreen(
+      tester,
+      overrides: [
+        activeProjectDocumentProvider.overrideWith((ref) async => project),
+        imageExportControllerProvider.overrideWith((ref) => controller),
+      ],
+    );
+
+    await tester.tap(find.byKey(const ValueKey('export-preview-image-button')));
+    await tester.pumpAndSettle();
+
+    final inlineError = find.byKey(const ValueKey('export-preview-image-error'));
+    expect(inlineError, findsOneWidget);
+    final errorText = tester.widget<Text>(inlineError);
+    expect(errorText.data, 'Kunne ikke generere billede.');
+    expect(find.byType(SnackBar), findsOneWidget);
+  });
+
+  testWidgets('export buttons layout does not overflow', (tester) async {
+    final project = ProjectDocument.empty(
+      projectId: 'project-layout',
+      taskType: 'Stillads',
+      now: DateTime.utc(2026, 4, 25, 8, 0),
+    );
+
+    await _pumpScreen(
+      tester,
+      overrides: [
+        activeProjectDocumentProvider.overrideWith((ref) async => project),
+      ],
+    );
+
+    expect(tester.takeException(), isNull);
+  });
 }
 
 Future<void> _pumpScreen(
@@ -444,4 +561,37 @@ class _NoopBuilder extends ProjectPdfBuilder {}
 class _NoopGateway implements PdfExportGateway {
   @override
   Future<void> openPdf({required Uint8List bytes, required String filename}) async {}
+}
+
+class _TestImageExportController extends ImageExportController {
+  _TestImageExportController({
+    required ImageExportState initialState,
+    Future<ImageExportState> Function(ProjectDocument? project)? onExport,
+  })  : _onExport = onExport,
+        super(
+          builder: ProjectImageBuilder(),
+          gateway: _NoopImageGateway(),
+          now: () => DateTime.utc(2026, 4, 25, 9, 0),
+        ) {
+    state = initialState;
+  }
+
+  final Future<ImageExportState> Function(ProjectDocument? project)? _onExport;
+  int exportCalls = 0;
+
+  @override
+  Future<ImageExportState> exportActiveProject(ProjectDocument? project) async {
+    exportCalls += 1;
+    if (_onExport == null) {
+      return state;
+    }
+    final result = await _onExport(project);
+    state = result;
+    return result;
+  }
+}
+
+class _NoopImageGateway implements ImageExportGateway {
+  @override
+  Future<void> shareImage({required Uint8List bytes, required String filename}) async {}
 }

@@ -7,6 +7,7 @@ import '../../core/models/plan_side.dart';
 import '../../core/models/plan_view_data.dart';
 import '../../core/models/project_document.dart';
 import '../plan_view/state/plan_view_controller.dart';
+import 'state/image_export_controller.dart';
 import 'state/pdf_export_controller.dart';
 
 class ExportPreviewScreen extends ConsumerWidget {
@@ -16,7 +17,9 @@ class ExportPreviewScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final projectAsync = ref.watch(activeProjectDocumentProvider);
     final pdfExportState = ref.watch(pdfExportControllerProvider);
+    final imageExportState = ref.watch(imageExportControllerProvider);
     final pdfExportController = ref.read(pdfExportControllerProvider.notifier);
+    final imageExportController = ref.read(imageExportControllerProvider.notifier);
 
     return projectAsync.when(
       data: (project) {
@@ -30,19 +33,43 @@ class ExportPreviewScreen extends ConsumerWidget {
           children: [
             Text('Eksport-preview', style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 12),
-            ElevatedButton.icon(
-              key: const ValueKey('export-preview-pdf-button'),
-              onPressed: pdfExportState.isLoading
-                  ? null
-                  : () async {
-                      final result = await pdfExportController.exportActiveProject(project);
-                      if (!context.mounted) return;
-                      final message = result.errorMessage ?? result.successMessage;
-                      if (message == null) return;
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-                    },
-              icon: const Icon(Icons.picture_as_pdf_outlined),
-              label: const Text('Eksportér PDF'),
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              children: [
+                ElevatedButton.icon(
+                  key: const ValueKey('export-preview-pdf-button'),
+                  onPressed: pdfExportState.isLoading
+                      ? null
+                      : () async {
+                          final result = await pdfExportController.exportActiveProject(project);
+                          if (!context.mounted) return;
+                          final message = result.errorMessage ?? result.successMessage;
+                          if (message == null) return;
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text(message)));
+                        },
+                  icon: const Icon(Icons.picture_as_pdf_outlined),
+                  label: const Text('Eksportér PDF'),
+                ),
+                ElevatedButton.icon(
+                  key: const ValueKey('export-preview-image-button'),
+                  onPressed: imageExportState.isLoading
+                      ? null
+                      : () async {
+                          final result = await imageExportController.exportActiveProject(project);
+                          if (!context.mounted) return;
+                          final message = result.errorMessage ?? result.successMessage;
+                          if (message == null) return;
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text(message)));
+                        },
+                  icon: const Icon(Icons.image_outlined),
+                  label: const Text('Eksportér billede'),
+                ),
+              ],
             ),
             if (pdfExportState.isLoading) ...[
               const SizedBox(height: 8),
@@ -77,6 +104,42 @@ class ExportPreviewScreen extends ConsumerWidget {
               Text(
                 pdfExportState.successMessage!,
                 key: const ValueKey('export-preview-pdf-success'),
+                style: TextStyle(color: Theme.of(context).colorScheme.primary),
+              ),
+            ],
+            if (imageExportState.isLoading) ...[
+              const SizedBox(height: 8),
+              Row(
+                key: const ValueKey('export-preview-image-loading'),
+                children: const [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Genererer billede...',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            if (!imageExportState.isLoading && imageExportState.errorMessage != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                imageExportState.errorMessage!,
+                key: const ValueKey('export-preview-image-error'),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+            if (!imageExportState.isLoading && imageExportState.successMessage != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                imageExportState.successMessage!,
+                key: const ValueKey('export-preview-image-success'),
                 style: TextStyle(color: Theme.of(context).colorScheme.primary),
               ),
             ],
