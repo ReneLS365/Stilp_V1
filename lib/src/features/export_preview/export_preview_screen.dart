@@ -7,6 +7,7 @@ import '../../core/models/plan_side.dart';
 import '../../core/models/plan_view_data.dart';
 import '../../core/models/project_document.dart';
 import '../plan_view/state/plan_view_controller.dart';
+import 'state/pdf_export_controller.dart';
 
 class ExportPreviewScreen extends ConsumerWidget {
   const ExportPreviewScreen({super.key});
@@ -14,6 +15,8 @@ class ExportPreviewScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final projectAsync = ref.watch(activeProjectDocumentProvider);
+    final pdfExportState = ref.watch(pdfExportControllerProvider);
+    final pdfExportController = ref.read(pdfExportControllerProvider.notifier);
 
     return projectAsync.when(
       data: (project) {
@@ -26,6 +29,57 @@ class ExportPreviewScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           children: [
             Text('Eksport-preview', style: Theme.of(context).textTheme.headlineSmall),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              key: const ValueKey('export-preview-pdf-button'),
+              onPressed: pdfExportState.isLoading
+                  ? null
+                  : () async {
+                      final result = await pdfExportController.exportActiveProject(project);
+                      if (!context.mounted) return;
+                      final message = result.errorMessage ?? result.successMessage;
+                      if (message == null) return;
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+                    },
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              label: const Text('Eksportér PDF'),
+            ),
+            if (pdfExportState.isLoading) ...[
+              const SizedBox(height: 8),
+              Row(
+                key: const ValueKey('export-preview-pdf-loading'),
+                children: const [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Genererer PDF...',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            if (!pdfExportState.isLoading && pdfExportState.errorMessage != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                pdfExportState.errorMessage!,
+                key: const ValueKey('export-preview-pdf-error'),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+            if (!pdfExportState.isLoading && pdfExportState.successMessage != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                pdfExportState.successMessage!,
+                key: const ValueKey('export-preview-pdf-success'),
+                style: TextStyle(color: Theme.of(context).colorScheme.primary),
+              ),
+            ],
             const SizedBox(height: 12),
             _ProjectSummarySection(project: project),
             const SizedBox(height: 12),

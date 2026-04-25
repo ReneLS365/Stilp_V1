@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,6 +13,8 @@ import 'package:stilp_v1/src/core/models/plan_side.dart';
 import 'package:stilp_v1/src/core/models/plan_view_data.dart';
 import 'package:stilp_v1/src/core/models/project_document.dart';
 import 'package:stilp_v1/src/features/export_preview/export_preview_screen.dart';
+import 'package:stilp_v1/src/features/export_preview/pdf/project_pdf_builder.dart';
+import 'package:stilp_v1/src/features/export_preview/state/pdf_export_controller.dart';
 import 'package:stilp_v1/src/features/plan_view/state/plan_view_controller.dart';
 
 void main() {
@@ -218,7 +223,11 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(home: ExportPreviewScreen()),
+        child: const MaterialApp(
+          home: Scaffold(
+            body: ExportPreviewScreen(),
+          ),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -234,18 +243,205 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Opdateret note'), findsOneWidget);
   });
+
+  testWidgets('export preview shows pdf export button', (tester) async {
+    final project = ProjectDocument.empty(
+      projectId: 'project-pdf-button',
+      taskType: 'Stillads',
+      now: DateTime.utc(2026, 4, 25, 8, 0),
+    );
+
+    await _pumpScreen(
+      tester,
+      overrides: [
+        activeProjectDocumentProvider.overrideWith((ref) async => project),
+      ],
+    );
+
+    expect(find.byKey(const ValueKey('export-preview-pdf-button')), findsOneWidget);
+    expect(find.text('Eksportér PDF'), findsOneWidget);
+  });
+
+  testWidgets('tapping PDF export triggers export path and success state', (tester) async {
+    final project = ProjectDocument.empty(
+      projectId: 'project-pdf-export',
+      taskType: 'Stillads',
+      now: DateTime.utc(2026, 4, 25, 8, 0),
+    );
+    final controller = _TestPdfExportController(
+      initialState: const PdfExportState(),
+      onExport: (_) async => const PdfExportState(successMessage: 'PDF genereret.'),
+    );
+
+    await _pumpScreen(
+      tester,
+      overrides: [
+        activeProjectDocumentProvider.overrideWith((ref) async => project),
+        pdfExportControllerProvider.overrideWith((ref) => controller),
+      ],
+    );
+
+    await tester.tap(find.byKey(const ValueKey('export-preview-pdf-button')));
+    await tester.pumpAndSettle();
+
+    expect(controller.exportCalls, 1);
+    expect(find.byKey(const ValueKey('export-preview-pdf-success')), findsOneWidget);
+  });
+
+  testWidgets('loading state is shown while pdf export is pending', (tester) async {
+    final project = ProjectDocument.empty(
+      projectId: 'project-pdf-loading',
+      taskType: 'Stillads',
+      now: DateTime.utc(2026, 4, 25, 8, 0),
+    );
+
+    await _pumpScreen(
+      tester,
+      overrides: [
+        activeProjectDocumentProvider.overrideWith((ref) async => project),
+        pdfExportControllerProvider.overrideWith(
+          (ref) => _TestPdfExportController(
+            initialState: const PdfExportState(isLoading: true),
+          ),
+        ),
+      ],
+      settle: false,
+    );
+
+    expect(find.byKey(const ValueKey('export-preview-pdf-loading')), findsOneWidget);
+    expect(find.text('Genererer PDF...'), findsOneWidget);
+  });
+
+  testWidgets('export failure shows clear error message', (tester) async {
+    final project = ProjectDocument.empty(
+      projectId: 'project-pdf-error',
+      taskType: 'Stillads',
+      now: DateTime.utc(2026, 4, 25, 8, 0),
+    );
+    final controller = _TestPdfExportController(
+      initialState: const PdfExportState(),
+      onExport: (_) async => const PdfExportState(errorMessage: 'Kunne ikke generere PDF.'),
+    );
+
+    await _pumpScreen(
+      tester,
+      overrides: [
+        activeProjectDocumentProvider.overrideWith((ref) async => project),
+        pdfExportControllerProvider.overrideWith((ref) => controller),
+      ],
+    );
+
+    await tester.tap(find.byKey(const ValueKey('export-preview-pdf-button')));
+    await tester.pumpAndSettle();
+
+    final inlineError = find.byKey(const ValueKey('export-preview-pdf-error'));
+    expect(inlineError, findsOneWidget);
+    final errorText = tester.widget<Text>(inlineError);
+    expect(errorText.data, 'Kunne ikke generere PDF.');
+    expect(find.byType(SnackBar), findsOneWidget);
+  });
+
+  testWidgets('export action does not throw when screen is disposed during pending export', (
+    tester,
+  ) async {
+    final project = ProjectDocument.empty(
+      projectId: 'project-pdf-dispose',
+      taskType: 'Stillads',
+      now: DateTime.utc(2026, 4, 25, 8, 0),
+    );
+    final completer = Completer<PdfExportState>();
+    final controller = _TestPdfExportController(
+      initialState: const PdfExportState(),
+      onExport: (_) => completer.future,
+      writeStateAfterExport: false,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          activeProjectDocumentProvider.overrideWith((ref) async => project),
+          pdfExportControllerProvider.overrideWith((ref) => controller),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: ExportPreviewScreen(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('export-preview-pdf-button')));
+    await tester.pump();
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+
+    completer.complete(const PdfExportState(successMessage: 'PDF genereret.'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+  });
 }
 
 Future<void> _pumpScreen(
   WidgetTester tester, {
   required List<Override> overrides,
+  bool settle = true,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: overrides,
-      child: const MaterialApp(home: ExportPreviewScreen()),
+      child: const MaterialApp(
+        home: Scaffold(
+          body: ExportPreviewScreen(),
+        ),
+      ),
     ),
   );
 
-  await tester.pumpAndSettle();
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+  }
+}
+
+class _TestPdfExportController extends PdfExportController {
+  _TestPdfExportController({
+    required PdfExportState initialState,
+    Future<PdfExportState> Function(ProjectDocument? project)? onExport,
+    this.writeStateAfterExport = true,
+  })  : _onExport = onExport,
+        super(
+          builder: _NoopBuilder(),
+          gateway: _NoopGateway(),
+          now: () => DateTime.utc(2026, 4, 25, 9, 0),
+        ) {
+    state = initialState;
+  }
+
+  final Future<PdfExportState> Function(ProjectDocument? project)? _onExport;
+  final bool writeStateAfterExport;
+  int exportCalls = 0;
+
+  @override
+  Future<PdfExportState> exportActiveProject(ProjectDocument? project) async {
+    exportCalls += 1;
+    if (_onExport == null) {
+      return state;
+    }
+    final result = await _onExport(project);
+    if (writeStateAfterExport) {
+      state = result;
+    }
+    return result;
+  }
+}
+
+class _NoopBuilder extends ProjectPdfBuilder {}
+
+class _NoopGateway implements PdfExportGateway {
+  @override
+  Future<void> openPdf({required Uint8List bytes, required String filename}) async {}
 }
