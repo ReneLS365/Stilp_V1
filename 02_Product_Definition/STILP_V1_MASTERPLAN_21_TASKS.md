@@ -51,10 +51,11 @@ Brug kun disse statustyper:
 - Total tasks: 23
 - Fase 0 setup: done
 - Done: 22
-- Active: 1
+- Active: 0
+- Review: 1
 - Planned: 0
 - Aktuel fase: Fase 8
-- Aktuel fokus: T23
+- Aktuel fokus: T23 review
 
 ## Aktuel repo-status
 Repoet indeholder allerede:
@@ -89,7 +90,7 @@ Det betyder:
 - T20 er merged via PR #29 med lokal billedeksport
 - T21 er merged via PR #31 med Android APK-distribution
 - T22 er merged via PR #33 med iOS-installationsworkflow
-- T23 er næste aktive task
+- T23 er i review
 
 ---
 
@@ -531,7 +532,7 @@ Mål: afsluttende polish og baseline-test efter release-distribution.
 
 ## T23 — Polish and baseline tests
 - Fase: 8
-- Status: active
+- Status: review
 - Mål: rydde de sidste fejl og sikre basisrobusthed efter release-distribution
 - Indhold:
   - grid logic tests
@@ -597,4 +598,4 @@ Når en Codex-opgave er merged:
 4. opdatér fremdriftstal øverst
 
 # Aktuel anbefalet startordre
-1. T23 Polish and baseline tests
+1. Afvent review/merge af T23

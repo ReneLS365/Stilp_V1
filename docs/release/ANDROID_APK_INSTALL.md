@@ -142,6 +142,8 @@ Verify all of the following:
 - [ ] Facade editor opens
 - [ ] Manual packing list opens
 - [ ] Export preview opens
+- [ ] PDF export path does not crash
+- [ ] Image export path does not crash
 - [ ] No backend/cloud login is required
 
 ## 10) Troubleshooting
