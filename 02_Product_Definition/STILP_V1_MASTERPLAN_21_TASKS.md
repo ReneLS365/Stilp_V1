@@ -48,11 +48,11 @@ Brug kun disse statustyper:
 ## Fremdrift
 - Total tasks: 21
 - Fase 0 setup: done
-- Done: 17
+- Done: 18
 - Active: 1
-- Planned: 3
+- Planned: 2
 - Aktuel fase: Fase 6
-- Aktuel fokus: T18
+- Aktuel fokus: T19
 
 ## Aktuel repo-status
 Repoet indeholder allerede:
@@ -82,7 +82,8 @@ Det betyder:
 - T15 er merged via PR #19 med visuel markørplacering og lokal persistens
 - T16 er merged via PR #21 med marker editing, move, edit og delete
 - T17 er merged via PR #23 med manuel pakkeliste uden BOM
-- T18 er næste aktive task
+- T18 er merged via PR #25 med samlet eksport-preview
+- T19 er næste aktive task
 
 ---
 
@@ -417,7 +418,8 @@ Mål: brugbart output og basal robusthed.
 
 ## T18 — Export preview
 - Fase: 6
-- Status: active
+- Status: done
+- Repo-note: merged via PR #25
 - Mål: samlet preview før eksport
 - Indhold:
   - project
@@ -431,7 +433,7 @@ Mål: brugbart output og basal robusthed.
 
 ## T19 — PDF export
 - Fase: 6
-- Status: planned
+- Status: active
 - Mål: eksportere PDF
 - Indhold:
   - PDF layout
