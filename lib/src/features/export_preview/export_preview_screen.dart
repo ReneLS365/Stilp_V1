@@ -15,33 +15,32 @@ class ExportPreviewScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final projectAsync = ref.watch(activeProjectDocumentProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Eksport-preview')),
-      body: projectAsync.when(
-        data: (project) {
-          if (project == null) {
-            return const Center(child: Text('Ingen aktivt projekt fundet.'));
-          }
+    return projectAsync.when(
+      data: (project) {
+        if (project == null) {
+          return const Center(child: Text('Ingen aktivt projekt fundet.'));
+        }
 
-          return ListView(
-            key: const ValueKey('export-preview-screen'),
-            padding: const EdgeInsets.all(16),
-            children: [
-              _ProjectSummarySection(project: project),
-              const SizedBox(height: 12),
-              _NotesSection(notes: project.notes),
-              const SizedBox(height: 12),
-              _PlanPreviewSection(plan: project.planView),
-              const SizedBox(height: 12),
-              _FacadesPreviewSection(facades: project.facades),
-              const SizedBox(height: 12),
-              _PackingListPreviewSection(items: project.manualPackingList),
-            ],
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => const Center(child: Text('Kunne ikke indlæse eksport-preview.')),
-      ),
+        return ListView(
+          key: const ValueKey('export-preview-screen'),
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text('Eksport-preview', style: Theme.of(context).textTheme.headlineSmall),
+            const SizedBox(height: 12),
+            _ProjectSummarySection(project: project),
+            const SizedBox(height: 12),
+            _NotesSection(notes: project.notes),
+            const SizedBox(height: 12),
+            _PlanPreviewSection(plan: project.planView),
+            const SizedBox(height: 12),
+            _FacadesPreviewSection(facades: project.facades),
+            const SizedBox(height: 12),
+            _PackingListPreviewSection(items: project.manualPackingList),
+          ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => const Center(child: Text('Kunne ikke indlæse eksport-preview.')),
     );
   }
 }
