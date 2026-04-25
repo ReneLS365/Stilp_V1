@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -331,6 +332,43 @@ void main() {
     expect(find.byKey(const ValueKey('export-preview-pdf-error')), findsOneWidget);
     expect(find.text('Kunne ikke generere PDF.'), findsOneWidget);
   });
+
+  testWidgets('export action does not throw when screen is disposed during pending export', (
+    tester,
+  ) async {
+    final project = ProjectDocument.empty(
+      projectId: 'project-pdf-dispose',
+      taskType: 'Stillads',
+      now: DateTime.utc(2026, 4, 25, 8, 0),
+    );
+    final completer = Completer<PdfExportState>();
+    final controller = _TestPdfExportController(
+      initialState: const PdfExportState(),
+      onExport: (_) => completer.future,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          activeProjectDocumentProvider.overrideWith((ref) async => project),
+          pdfExportControllerProvider.overrideWith((ref) => controller),
+        ],
+        child: const MaterialApp(home: ExportPreviewScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('export-preview-pdf-button')));
+    await tester.pump();
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+
+    completer.complete(const PdfExportState(successMessage: 'PDF genereret.'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+  });
 }
 
 Future<void> _pumpScreen(
@@ -364,10 +402,14 @@ class _TestPdfExportController extends PdfExportController {
   int exportCalls = 0;
 
   @override
-  Future<void> exportActiveProject(ProjectDocument? project) async {
+  Future<PdfExportState> exportActiveProject(ProjectDocument? project) async {
     exportCalls += 1;
-    if (_onExport == null) return;
-    state = await _onExport(project);
+    if (_onExport == null) {
+      return state;
+    }
+    final result = await _onExport(project);
+    state = result;
+    return result;
   }
 }
 

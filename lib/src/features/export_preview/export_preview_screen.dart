@@ -35,10 +35,10 @@ class ExportPreviewScreen extends ConsumerWidget {
               onPressed: pdfExportState.isLoading
                   ? null
                   : () async {
-                      await pdfExportController.exportActiveProject(project);
-                      final result = ref.read(pdfExportControllerProvider);
+                      final result = await pdfExportController.exportActiveProject(project);
+                      if (!context.mounted) return;
                       final message = result.errorMessage ?? result.successMessage;
-                      if (message == null || !context.mounted) return;
+                      if (message == null) return;
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
                     },
               icon: const Icon(Icons.picture_as_pdf_outlined),

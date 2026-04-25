@@ -37,10 +37,11 @@ class PdfExportController extends StateNotifier<PdfExportState> {
   final PdfExportGateway _gateway;
   final DateTime Function() _now;
 
-  Future<void> exportActiveProject(ProjectDocument? project) async {
+  Future<PdfExportState> exportActiveProject(ProjectDocument? project) async {
     if (project == null) {
-      state = const PdfExportState(errorMessage: 'Ingen aktivt projekt fundet.');
-      return;
+      const result = PdfExportState(errorMessage: 'Ingen aktivt projekt fundet.');
+      state = result;
+      return result;
     }
 
     state = const PdfExportState(isLoading: true);
@@ -49,9 +50,13 @@ class PdfExportController extends StateNotifier<PdfExportState> {
       final pdfBytes = await _builder.build(project);
       final filename = buildPdfFilename(project.projectId, _now());
       await _gateway.openPdf(bytes: pdfBytes, filename: filename);
-      state = const PdfExportState(successMessage: 'PDF genereret.');
+      const result = PdfExportState(successMessage: 'PDF genereret.');
+      state = result;
+      return result;
     } catch (_) {
-      state = const PdfExportState(errorMessage: 'Kunne ikke generere PDF.');
+      const result = PdfExportState(errorMessage: 'Kunne ikke generere PDF.');
+      state = result;
+      return result;
     }
   }
 }

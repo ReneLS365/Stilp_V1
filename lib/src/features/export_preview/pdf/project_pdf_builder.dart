@@ -40,9 +40,9 @@ class ProjectPdfBuilder {
               project.notes.trim().isEmpty ? 'Ingen noter.' : project.notes.trim(),
             ),
           ),
-          _buildPlanOverview(project),
-          _buildFacadeOverview(project.facades),
-          _buildPackingList(project.manualPackingList),
+          ..._buildPlanOverviewWidgets(project),
+          ..._buildFacadeOverviewWidgets(project.facades),
+          ..._buildPackingListWidgets(project.manualPackingList),
         ],
       ),
     );
@@ -50,98 +50,119 @@ class ProjectPdfBuilder {
     return document.save();
   }
 
-  pw.Widget _buildPlanOverview(ProjectDocument project) {
+  List<pw.Widget> _buildPlanOverviewWidgets(ProjectDocument project) {
     final plan = project.planView;
     final hasPlan = plan.nodes.isNotEmpty || plan.edges.isNotEmpty;
 
     if (!hasPlan) {
-      return _section(title: 'Planoversigt', child: pw.Text('Ingen plan tegnet endnu.'));
+      return [_emptySection(title: 'Planoversigt', message: 'Ingen plan tegnet endnu.')];
     }
 
-    return _section(
-      title: 'Planoversigt',
+    return [
+      _section(
+        title: 'Planoversigt',
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text('Noder: ${plan.nodes.length}'),
+            pw.Text('Sider: ${plan.edges.length}'),
+          ],
+        ),
+      ),
+      if (plan.edges.isNotEmpty) ...[
+        _sectionHeader('Plan-sider'),
+        ...plan.edges.map(
+          (edge) => _lineItemContainer(
+            '${edge.id}: ${_planSideTypeLabel(edge.sideType)} · ${_formatLengthMm(edge.lengthMm)}',
+          ),
+        ),
+      ],
+    ];
+  }
+
+  List<pw.Widget> _buildFacadeOverviewWidgets(List<FacadeDocument> facades) {
+    if (facades.isEmpty) {
+      return [_emptySection(title: 'Facader', message: 'Ingen facader oprettet endnu.')];
+    }
+
+    return [
+      _sectionHeader('Facader'),
+      ...facades.map(
+        (facade) => _facadeTile(facade),
+      ),
+    ];
+  }
+
+  List<pw.Widget> _buildPackingListWidgets(List<ManualPackingListItem> items) {
+    if (items.isEmpty) {
+      return [_emptySection(title: 'Manuel pakkeliste', message: 'Ingen pakkelinjer endnu.')];
+    }
+
+    return [
+      _sectionHeader('Manuel pakkeliste'),
+      ...items.map(
+        (item) => _lineItemContainer(
+          '${item.text} · Antal: ${_formatQuantity(item.quantity)} · Enhed: ${_formatUnit(item.unit)}',
+        ),
+      ),
+    ];
+  }
+
+  pw.Widget _facadeTile(FacadeDocument facade) {
+    return pw.Container(
+      margin: const pw.EdgeInsets.only(bottom: 8),
+      padding: const pw.EdgeInsets.all(8),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey500),
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+      ),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Text('Noder: ${plan.nodes.length}'),
-          pw.Text('Sider: ${plan.edges.length}'),
-          if (plan.edges.isNotEmpty) pw.SizedBox(height: 6),
-          ...plan.edges.map(
-            (edge) => pw.Padding(
-              padding: const pw.EdgeInsets.only(bottom: 4),
-              child: pw.Text(
-                '${edge.id}: ${_planSideTypeLabel(edge.sideType)} · ${_formatLengthMm(edge.lengthMm)}',
-              ),
-            ),
+          pw.Text(
+            facade.label.trim().isEmpty ? facade.sideId : facade.label.trim(),
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
           ),
+          pw.Text('Plan-side: ${facade.planEdgeId}'),
+          pw.Text('Sidetype: ${_planSideTypeLabel(facade.sideType)}'),
+          pw.Text('Længde: ${_formatLengthMm(facade.edgeLengthMm)}'),
+          pw.Text('Sektioner: ${facade.sections.length}'),
+          pw.Text('Etager: ${facade.storeys.length}'),
+          pw.Text('Markører: ${facade.markers.length}'),
+          pw.Text('Ståhøjde: ${_formatOptionalMeter(facade.standingHeightM)}'),
+          if (facade.standingHeightM != null)
+            pw.Text('Topzone: ${_formatOptionalMeter(facade.topZoneM)}'),
         ],
       ),
     );
   }
 
-  pw.Widget _buildFacadeOverview(List<FacadeDocument> facades) {
-    if (facades.isEmpty) {
-      return _section(title: 'Facader', child: pw.Text('Ingen facader oprettet endnu.'));
-    }
+  pw.Widget _lineItemContainer(String text) {
+    return pw.Container(
+      margin: const pw.EdgeInsets.only(bottom: 6),
+      padding: const pw.EdgeInsets.all(8),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey400),
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+      ),
+      child: pw.Text(text),
+    );
+  }
 
-    return _section(
-      title: 'Facader',
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: facades
-            .map(
-              (facade) => pw.Container(
-                margin: const pw.EdgeInsets.only(bottom: 8),
-                padding: const pw.EdgeInsets.all(8),
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.grey500),
-                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
-                ),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      facade.label.trim().isEmpty ? facade.sideId : facade.label.trim(),
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                    ),
-                    pw.Text('Plan-side: ${facade.planEdgeId}'),
-                    pw.Text('Sidetype: ${_planSideTypeLabel(facade.sideType)}'),
-                    pw.Text('Længde: ${_formatLengthMm(facade.edgeLengthMm)}'),
-                    pw.Text('Sektioner: ${facade.sections.length}'),
-                    pw.Text('Etager: ${facade.storeys.length}'),
-                    pw.Text('Markører: ${facade.markers.length}'),
-                    pw.Text('Ståhøjde: ${_formatOptionalMeter(facade.standingHeightM)}'),
-                    if (facade.standingHeightM != null)
-                      pw.Text('Topzone: ${_formatOptionalMeter(facade.topZoneM)}'),
-                  ],
-                ),
-              ),
-            )
-            .toList(growable: false),
+  pw.Widget _sectionHeader(String title) {
+    return pw.Container(
+      margin: const pw.EdgeInsets.only(bottom: 8),
+      child: pw.Text(
+        title,
+        style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
       ),
     );
   }
 
-  pw.Widget _buildPackingList(List<ManualPackingListItem> items) {
-    if (items.isEmpty) {
-      return _section(title: 'Manuel pakkeliste', child: pw.Text('Ingen pakkelinjer endnu.'));
-    }
-
+  pw.Widget _emptySection({required String title, required String message}) {
     return _section(
-      title: 'Manuel pakkeliste',
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: items
-            .map(
-              (item) => pw.Padding(
-                padding: const pw.EdgeInsets.only(bottom: 6),
-                child: pw.Text(
-                  '${item.text} · Antal: ${_formatQuantity(item.quantity)} · Enhed: ${_formatUnit(item.unit)}',
-                ),
-              ),
-            )
-            .toList(growable: false),
-      ),
+      title: title,
+      child: pw.Text(message),
     );
   }
 

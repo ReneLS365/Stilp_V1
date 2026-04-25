@@ -80,6 +80,51 @@ void main() {
     expect(bytes, isNotEmpty);
     expect(pdfText, contains('Markører: 2'));
   });
+
+  test('builds pdf with many facades without page overflow', () async {
+    final facades = List.generate(
+      80,
+      (index) => FacadeDocument(
+        sideId: 'e$index',
+        label: 'Facade $index',
+        planEdgeId: 'e$index',
+        sideOrder: index,
+        edgeLengthMm: 15000 + index,
+        sideType: PlanSideType.langside,
+        eavesHeightMm: null,
+        ridgeHeightMm: null,
+        standingHeightM: 5.0,
+        topZoneM: 1.0,
+        sections: const [FacadeSection(id: 's', widthM: 3.0)],
+        storeys: const [FacadeStorey(id: 'st', heightM: 2.0, kind: FacadeStoreyKind.main)],
+        markers: const [],
+      ),
+    );
+    final project = _populatedProject().copyWith(facades: facades);
+
+    final bytes = await builder.build(project);
+
+    expect(bytes, isNotEmpty);
+    expect(bytes.length, greaterThan(200));
+  });
+
+  test('builds pdf with many packing rows without page overflow', () async {
+    final items = List.generate(
+      160,
+      (index) => ManualPackingListItem(
+        id: 'item-$index',
+        text: 'Pakkelinje $index',
+        quantity: index + 1,
+        unit: 'stk',
+      ),
+    );
+    final project = _populatedProject().copyWith(manualPackingList: items);
+
+    final bytes = await builder.build(project);
+
+    expect(bytes, isNotEmpty);
+    expect(bytes.length, greaterThan(200));
+  });
 }
 
 ProjectDocument _populatedProject() {
