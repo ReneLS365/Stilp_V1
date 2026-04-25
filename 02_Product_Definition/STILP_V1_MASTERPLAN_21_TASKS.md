@@ -23,6 +23,8 @@ Stilp v1 er færdig når brugeren kan:
 - placere visuelle markører
 - skrive manuel pakkeliste
 - eksportere PDF eller billede
+- installere intern Android-release via APK
+- installere intern iOS-release på iPhone via signeret iOS-distribution
 
 ## Uden for scope
 Disse ting må ikke snige sig ind i v1:
@@ -46,11 +48,11 @@ Brug kun disse statustyper:
 - done
 
 ## Fremdrift
-- Total tasks: 21
+- Total tasks: 23
 - Fase 0 setup: done
 - Done: 19
 - Active: 1
-- Planned: 1
+- Planned: 3
 - Aktuel fase: Fase 6
 - Aktuel fokus: T20
 
@@ -84,7 +86,9 @@ Det betyder:
 - T17 er merged via PR #23 med manuel pakkeliste uden BOM
 - T18 er merged via PR #25 med samlet eksport-preview
 - T19 er merged via PR #27 med lokal PDF-eksport
-- T20 er næste aktive task
+- T20 er aktiv task
+- T21 og T22 er låst som fast release-distribution før afsluttende polish
+- T23 er planned som sidste polish- og baseline-test task
 
 ---
 
@@ -118,6 +122,26 @@ Det betyder:
 - ingen unødig databaskompleksitet før det er nødvendigt
 
 T06 er implementeret som lokal filbaseret persistence for det fulde projektdokument.
+
+## 4. Release-distribution før afsluttende polish
+
+Når T20 er færdig, skal Stilp v1 videre til installérbar release-distribution før den afsluttende polish-task.
+
+Release-distribution låses som fast del af planen før sidste test/polish:
+- T21: Android APK-distribution
+- T22: iOS-installation på iPhone
+- T23: Polish and baseline tests
+
+Beslutning:
+- Android skal leveres som installerbar release APK.
+- iOS skal leveres som signeret iOS-build med en Apple-tilladt installationsvej.
+- Play Store er ikke krav i v1.
+- App Store release er ikke krav i v1.
+- Distribution må ikke indføre backend, cloud sync, BOM eller komponentlogik.
+
+Bemærkning:
+- Android kan installeres via APK.
+- iOS har ikke et APK-ækvivalent frit installationsformat. Installation kræver signing/provisioning og en valgt installationsvej, fx TestFlight eller ad hoc.
 
 ---
 
@@ -160,13 +184,23 @@ Mål: praktisk planlægning og pakkeforberedelse.
 - T16 Marker editing
 - T17 Manual packing list
 
-## Fase 6 — Eksport og finish
-Mål: brugbart output og basal robusthed.
+## Fase 6 — Eksport
+Mål: brugbart output fra projektet.
 
 - T18 Export preview
 - T19 PDF export
 - T20 Image export
-- T21 Polish and baseline tests
+
+## Fase 7 — Release-distribution
+Mål: installérbar app til fysisk Android og iPhone.
+
+- T21 Android APK distribution
+- T22 iOS installable distribution
+
+## Fase 8 — Finish
+Mål: afsluttende polish og baseline-test efter release-distribution.
+
+- T23 Polish and baseline tests
 
 ---
 
@@ -455,19 +489,57 @@ Mål: brugbart output og basal robusthed.
 - Done når:
   - billede kan eksporteres og deles
 
-## T21 — Polish and baseline tests
-- Fase: 6
+## T21 — Android APK distribution
+- Fase: 7
 - Status: planned
-- Mål: rydde de sidste fejl og sikre basisrobusthed
+- Mål: bygge og distribuere en installerbar Android APK til intern brug og feltbrug
+- Indhold:
+  - Flutter Android release build
+  - app signing eller release-keystore beslutning
+  - version name og version code
+  - APK artifact
+  - simple installationsinstruktioner
+- Afhænger af: T20
+- Done når:
+  - signeret APK kan installeres på fysisk Android-telefon
+  - appen starter efter installation
+  - lokal projektdata kan oprettes, gemmes og åbnes
+  - installation er dokumenteret
+  - ingen Play Store-krav er indført
+
+## T22 — iOS installable distribution
+- Fase: 7
+- Status: planned
+- Mål: bygge og distribuere en installerbar iOS-version til iPhone
+- Indhold:
+  - Flutter iOS release build
+  - Apple signing/provisioning setup
+  - valgt installationsvej: TestFlight eller ad hoc
+  - version og build number
+  - simple installationsinstruktioner
+- Afhænger af: T21
+- Done når:
+  - signeret iOS-build kan installeres på fysisk iPhone
+  - appen starter efter installation
+  - lokal projektdata kan oprettes, gemmes og åbnes
+  - signing/provisioning er dokumenteret
+  - ingen App Store release er krævet i v1
+
+## T23 — Polish and baseline tests
+- Fase: 8
+- Status: planned
+- Mål: rydde de sidste fejl og sikre basisrobusthed efter release-distribution
 - Indhold:
   - grid logic tests
   - persistence tests
   - top zone tests
   - marker model tests
   - export payload checks
-- Afhænger af: T19, T20
+  - release smoke checks på installerbare builds hvor relevant
+- Afhænger af: T21, T22
 - Done når:
   - de vigtigste flows virker stabilt
+  - installerbare builds er verificeret i basisflow
   - ingen scope-drift er indført
 
 ---
@@ -500,8 +572,16 @@ Efter T17
 - praktisk planlægning og manuel pakkeforberedelse virker
 
 ## Milepæl F
-Efter T21
-- Stilp v1 er klar til reel intern brug og feltprøve
+Efter T22
+- Android APK kan installeres på fysisk Android-telefon
+- iOS-version kan installeres på fysisk iPhone via valgt signeret distributionsvej
+- Stilp v1 er pakket som installerbar intern release
+
+## Milepæl G
+Efter T23
+- Stilp v1 er feature-complete til intern brug og feltprøve
+- baseline tests og polish er afsluttet
+- release-distribution og basisverificering er gennemført
 
 ---
 
@@ -513,9 +593,7 @@ Når en Codex-opgave er merged:
 4. opdatér fremdriftstal øverst
 
 # Aktuel anbefalet startordre
-1. T03 Local-first app structure
-2. T04 New project flow
-3. T05 Project model v1 in code
-4. T06 Local persistence wired
-5. T07 Plan view canvas
-6. T08 Side measurement and side type
+1. T20 Image export
+2. T21 Android APK distribution
+3. T22 iOS installable distribution
+4. T23 Polish and baseline tests
