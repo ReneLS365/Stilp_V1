@@ -8,14 +8,37 @@ Scope:
 - Internal/feltbrug distribution
 - No Play Store flow
 
-## 1) Preconditions
+## 1) Fastest path: download APK from GitHub Actions
+
+After the `Build Android APK` workflow has run successfully on GitHub:
+
+1. Open the repository on GitHub.
+2. Go to **Actions**.
+3. Open **Build Android APK**.
+4. Open the latest successful run.
+5. Scroll to **Artifacts**.
+6. Download `stilp-v1-android-apk`.
+7. Unzip the downloaded artifact.
+8. Install `app-release.apk` on the Android phone.
+
+The workflow artifact contains:
+
+```text
+app-release.apk
+```
+
+Artifact retention:
+- GitHub keeps the APK artifact for 30 days.
+- Run the workflow again when a fresh APK is needed.
+
+## 2) Preconditions for local build
 
 You need:
 - Flutter SDK installed and on `PATH`
 - Android SDK + platform tools installed
 - A connected Android phone (USB) or file transfer method
 
-This repository currently does **not** include an `android/` platform directory. Before the first APK build, generate it once from repo root:
+This repository currently does **not** include an `android/` platform directory. Before the first local APK build, generate it once from repo root:
 
 ```bash
 flutter create --platforms=android .
@@ -23,7 +46,38 @@ flutter create --platforms=android .
 
 After this, keep and version-control the generated `android/` project files (except secrets/keystores).
 
-## 2) Release identity (label/package)
+## 3) GitHub Actions APK workflow
+
+The repository includes a GitHub Actions workflow at:
+
+```text
+.github/workflows/android-apk.yml
+```
+
+It can be started manually:
+
+```text
+GitHub → Actions → Build Android APK → Run workflow
+```
+
+The workflow runs:
+
+```bash
+flutter pub get
+flutter analyze
+flutter test
+flutter build apk --release
+```
+
+If the repository has no `android/` directory, the workflow generates one during the run with:
+
+```bash
+flutter create --platforms=android .
+```
+
+That generated platform directory is used only inside the workflow run unless committed separately later.
+
+## 4) Release identity (label/package)
 
 Recommended defaults for Stilp v1:
 - App label: `Stilp v1`
@@ -35,7 +89,7 @@ If needed, set these in:
 
 Only change these if your generated Android project does not already match your chosen Stilp identity.
 
-## 3) Signing and keystore handling
+## 5) Signing and keystore handling
 
 ### Important
 - Do **not** commit private keystores (`*.jks`, `*.keystore`) or passwords.
@@ -71,7 +125,7 @@ android/key.properties
 *.keystore
 ```
 
-## 4) Build commands
+## 6) Local build commands
 
 From repository root:
 
@@ -88,7 +142,7 @@ Primary release command (required):
 flutter build apk --release
 ```
 
-## 5) APK output location
+## 7) APK output location
 
 Default Flutter output path:
 
@@ -96,7 +150,7 @@ Default Flutter output path:
 build/app/outputs/flutter-apk/app-release.apk
 ```
 
-## 6) Transfer APK to Android phone
+## 8) Transfer APK to Android phone
 
 Choose one method:
 
@@ -114,7 +168,7 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 1. Upload APK from your computer.
 2. Download APK on phone to local storage.
 
-## 7) Allow installation from unknown apps
+## 9) Allow installation from unknown apps
 
 On Android phone:
 1. Open **Settings**.
@@ -122,7 +176,7 @@ On Android phone:
 3. Open **Install unknown apps**.
 4. Enable the app you use to open APKs (e.g., Files, Chrome, Drive).
 
-## 8) Install APK
+## 10) Install APK
 
 On phone:
 1. Open the downloaded `app-release.apk`.
@@ -130,7 +184,7 @@ On phone:
 3. Wait for install completion.
 4. Tap **Open**.
 
-## 9) Post-install smoke checklist (physical device)
+## 11) Post-install smoke checklist (physical device)
 
 Verify all of the following:
 - [ ] APK installs on a physical Android phone
@@ -146,7 +200,17 @@ Verify all of the following:
 - [ ] Image export path does not crash
 - [ ] No backend/cloud login is required
 
-## 10) Troubleshooting
+## 12) Troubleshooting
+
+### GitHub Actions run fails
+- Open the failed workflow run.
+- Check whether failure happened in `flutter analyze`, `flutter test`, or `flutter build apk --release`.
+- Fix the reported issue and rerun the workflow.
+
+### No artifact is visible
+- Artifacts are only created after a successful workflow run.
+- Open the latest successful run, not a failed run.
+- The artifact expires after 30 days.
 
 ### Install blocked by Android
 - Ensure **Install unknown apps** is enabled for the installer app.
