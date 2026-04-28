@@ -490,13 +490,8 @@ class _SideEditorRowState extends ConsumerState<_SideEditorRow> {
 
   Future<void> _saveDimensions() async {
     final lengthParse = parseHeightInputMm(_lengthController.text);
-    final eavesParse = parseHeightInputMm(_eavesController.text);
-    final ridgeParse = parseHeightInputMm(_ridgeController.text);
     final overhangParse = parseHeightInputMm(_overhangController.text);
-    if (!lengthParse.isValid ||
-        !eavesParse.isValid ||
-        !ridgeParse.isValid ||
-        !overhangParse.isValid) {
+    if (!lengthParse.isValid || !overhangParse.isValid) {
       if (!mounted) {
         return;
       }
@@ -510,18 +505,60 @@ class _SideEditorRowState extends ConsumerState<_SideEditorRow> {
       return;
     }
 
+    var nextEavesMm = widget.edge.eavesMm;
+    var nextRidgeMm = widget.edge.ridgeMm;
+
+    switch (widget.edge.sideType) {
+      case PlanSideType.langside:
+        final eavesParse = parseHeightInputMm(_eavesController.text);
+        if (!eavesParse.isValid) {
+          if (!mounted) {
+            return;
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Ugyldigt format. Brug meter, fx 10,20 eller 0,60 m.',
+              ),
+            ),
+          );
+          return;
+        }
+        nextEavesMm = eavesParse.valueMm;
+        break;
+      case PlanSideType.gavl:
+        final ridgeParse = parseHeightInputMm(_ridgeController.text);
+        if (!ridgeParse.isValid) {
+          if (!mounted) {
+            return;
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Ugyldigt format. Brug meter, fx 10,20 eller 0,60 m.',
+              ),
+            ),
+          );
+          return;
+        }
+        nextRidgeMm = ridgeParse.valueMm;
+        break;
+      case PlanSideType.andet:
+        break;
+    }
+
     final controller = ref.read(planViewControllerProvider);
     await controller.updateSideDimensions(
       projectId: widget.projectId,
       edgeId: widget.edge.id,
       lengthMm: lengthParse.valueMm,
-      eavesMm: eavesParse.valueMm,
-      ridgeMm: ridgeParse.valueMm,
+      eavesMm: nextEavesMm,
+      ridgeMm: nextRidgeMm,
       overhangMm: overhangParse.valueMm,
     );
     _lengthController.text = _asInput(lengthParse.valueMm);
-    _eavesController.text = _asInput(eavesParse.valueMm);
-    _ridgeController.text = _asInput(ridgeParse.valueMm);
+    _eavesController.text = _asInput(nextEavesMm);
+    _ridgeController.text = _asInput(nextRidgeMm);
     _overhangController.text = _asInput(overhangParse.valueMm);
     ref.invalidate(activeProjectDocumentProvider);
     ref.invalidate(projectsProvider);
@@ -536,7 +573,7 @@ class _SideEditorRowState extends ConsumerState<_SideEditorRow> {
   }
 
   static String _asInput(int? value) => formatMetersInput(value);
-  static String _formatLength(int mm) => '${(mm / 1000).toStringAsFixed(2)} m';
+  static String _formatLength(int mm) => formatMetersInput(mm);
 }
 
 class _PlanEmptyState extends StatelessWidget {

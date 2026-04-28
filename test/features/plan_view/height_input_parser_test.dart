@@ -24,8 +24,22 @@ void main() {
       expect(result.valueMm, 10200);
     });
 
+    test('parses decimal meter with dot and unit suffix', () {
+      final result = parseHeightInputMm('10.20m');
+
+      expect(result.isValid, isTrue);
+      expect(result.valueMm, 10200);
+    });
+
     test('parses short decimal meter value', () {
       final result = parseHeightInputMm('0,60');
+
+      expect(result.isValid, isTrue);
+      expect(result.valueMm, 600);
+    });
+
+    test('parses short dot decimal meter value', () {
+      final result = parseHeightInputMm('0.60');
 
       expect(result.isValid, isTrue);
       expect(result.valueMm, 600);
@@ -53,6 +67,10 @@ void main() {
     test('formats values to meters with comma and suffix', () {
       expect(formatMetersInput(10200), '10,20 m');
       expect(formatMetersInput(600), '0,60 m');
+    });
+
+    test('returns empty string for null values', () {
+      expect(formatMetersInput(null), '');
     });
   });
 }
