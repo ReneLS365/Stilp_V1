@@ -213,8 +213,8 @@ void main() {
         ridgeHeightMm: 4500,
       );
 
-      final invalidEaves = parseHeightInputMm('3,200');
-      final invalidRidge = parseHeightInputMm('3200mm');
+      final invalidEaves = parseHeightInputMm('3,200,10');
+      final invalidRidge = parseHeightInputMm('abc');
       if (invalidEaves.isValid && invalidRidge.isValid) {
         await controller.updateSideHeights(
           projectId: projectId,

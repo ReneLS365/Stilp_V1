@@ -422,10 +422,11 @@ class _SideEditorRowState extends ConsumerState<_SideEditorRow> {
           enabled: widget.isEnabled,
           keyboardType: TextInputType.number,
           decoration: const InputDecoration(
-            labelText: 'Længde (mm)',
+            labelText: 'Længde (m)',
             border: OutlineInputBorder(),
             isDense: true,
           ),
+          onEditingComplete: () => _normalizeInput(_lengthController),
           onSubmitted: (_) => _saveDimensions(),
         ),
         const SizedBox(height: 8),
@@ -438,10 +439,11 @@ class _SideEditorRowState extends ConsumerState<_SideEditorRow> {
                   enabled: widget.isEnabled,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
-                    labelText: 'Tagfod (mm)',
+                    labelText: 'Tagfod (m)',
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
+                  onEditingComplete: () => _normalizeInput(_eavesController),
                   onSubmitted: (_) => _saveDimensions(),
                 ),
               ),
@@ -452,10 +454,11 @@ class _SideEditorRowState extends ConsumerState<_SideEditorRow> {
                   enabled: widget.isEnabled,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
-                    labelText: 'Kip (mm)',
+                    labelText: 'Kip (m)',
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
+                  onEditingComplete: () => _normalizeInput(_ridgeController),
                   onSubmitted: (_) => _saveDimensions(),
                 ),
               ),
@@ -466,10 +469,11 @@ class _SideEditorRowState extends ConsumerState<_SideEditorRow> {
                 enabled: widget.isEnabled,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  labelText: 'Udhæng (mm)',
+                  labelText: 'Udhæng (m)',
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
+                onEditingComplete: () => _normalizeInput(_overhangController),
                 onSubmitted: (_) => _saveDimensions(),
               ),
             ),
@@ -499,7 +503,7 @@ class _SideEditorRowState extends ConsumerState<_SideEditorRow> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Ugyldigt format. Brug hele millimeter (eksempel: 3200).',
+            'Ugyldigt format. Brug meter, fx 10,20 eller 0,60 m.',
           ),
         ),
       );
@@ -515,11 +519,23 @@ class _SideEditorRowState extends ConsumerState<_SideEditorRow> {
       ridgeMm: ridgeParse.valueMm,
       overhangMm: overhangParse.valueMm,
     );
+    _lengthController.text = _asInput(lengthParse.valueMm);
+    _eavesController.text = _asInput(eavesParse.valueMm);
+    _ridgeController.text = _asInput(ridgeParse.valueMm);
+    _overhangController.text = _asInput(overhangParse.valueMm);
     ref.invalidate(activeProjectDocumentProvider);
     ref.invalidate(projectsProvider);
   }
 
-  static String _asInput(int? value) => value?.toString() ?? '';
+  void _normalizeInput(TextEditingController controller) {
+    final parsed = parseHeightInputMm(controller.text);
+    if (!parsed.isValid) {
+      return;
+    }
+    controller.text = _asInput(parsed.valueMm);
+  }
+
+  static String _asInput(int? value) => formatMetersInput(value);
   static String _formatLength(int mm) => '${(mm / 1000).toStringAsFixed(2)} m';
 }
 
