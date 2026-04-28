@@ -105,7 +105,7 @@ void main() {
       expect(edge.sideType, PlanSideType.gavl);
     });
 
-    test('updateSideHeights persists and allows clearing heights', () async {
+    test('updateSideDimensions persists and allows clearing dimension values', () async {
       final store = InMemoryProjectStore();
       const projectId = 'heights-project';
       await store.saveProject(
@@ -122,23 +122,29 @@ void main() {
       );
 
       await controller.startRectangle(projectId);
-      await controller.updateSideHeights(
+      await controller.updateSideDimensions(
         projectId: projectId,
         edgeId: 'e2',
-        eavesHeightMm: 3100,
-        ridgeHeightMm: 4600,
+        lengthMm: 8800,
+        eavesMm: 3100,
+        ridgeMm: 4600,
+        overhangMm: 250,
       );
-      await controller.updateSideHeights(
+      await controller.updateSideDimensions(
         projectId: projectId,
         edgeId: 'e2',
-        eavesHeightMm: null,
-        ridgeHeightMm: null,
+        lengthMm: 8700,
+        eavesMm: null,
+        ridgeMm: null,
+        overhangMm: null,
       );
 
       final updated = await store.getProject(projectId);
       final edge = updated!.planView.edges.firstWhere((item) => item.id == 'e2');
+      expect(edge.lengthMm, 8700);
       expect(edge.eavesHeightMm, isNull);
       expect(edge.ridgeHeightMm, isNull);
+      expect(edge.overhangMm, isNull);
     });
 
     test('concurrent side metadata saves preserve both updates', () async {
@@ -164,11 +170,12 @@ void main() {
           edgeId: 'e1',
           sideType: PlanSideType.gavl,
         ),
-        controller.updateSideHeights(
+        controller.updateSideDimensions(
           projectId: projectId,
           edgeId: 'e2',
-          eavesHeightMm: 3200,
-          ridgeHeightMm: 4700,
+          eavesMm: 3200,
+          ridgeMm: 4700,
+          overhangMm: 300,
         ),
       ];
       await Future.wait(futures);
@@ -179,6 +186,7 @@ void main() {
       expect(e1.sideType, PlanSideType.gavl);
       expect(e2.eavesHeightMm, 3200);
       expect(e2.ridgeHeightMm, 4700);
+      expect(e2.overhangMm, 300);
     });
 
     test('invalid non-empty height input does not clear existing saved value', () async {
@@ -288,11 +296,12 @@ void main() {
         edgeId: 'e3',
         sideType: PlanSideType.langside,
       );
-      await controller.updateSideHeights(
+      await controller.updateSideDimensions(
         projectId: projectId,
         edgeId: 'e3',
-        eavesHeightMm: 3300,
-        ridgeHeightMm: 5000,
+        eavesMm: 3300,
+        ridgeMm: 5000,
+        overhangMm: 350,
       );
 
       final freshStore = FileLocalProjectStore(projectsDirectory: projectsDirectory);
@@ -307,6 +316,7 @@ void main() {
       expect(edge.sideType, PlanSideType.langside);
       expect(edge.eavesHeightMm, 3300);
       expect(edge.ridgeHeightMm, 5000);
+      expect(edge.overhangMm, 350);
     });
   });
 }

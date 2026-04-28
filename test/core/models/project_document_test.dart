@@ -22,8 +22,9 @@ void main() {
           toNodeId: 'n1',
           lengthMm: 5000,
           sideType: PlanSideType.langside,
-          eavesHeightMm: 3200,
-          ridgeHeightMm: 4600,
+          eavesMm: 3200,
+          ridgeMm: 4600,
+          overhangMm: 250,
         ),
       ],
     );
@@ -33,6 +34,7 @@ void main() {
     expect(json.keys, containsAll(<String>['enabled', 'nodes', 'edges']));
     expect(json.keys, isNot(contains('sides')));
     expect((json['edges'] as List).single['sideType'], 'langside');
+    expect((json['edges'] as List).single['overhangMm'], 250);
   });
 
   test('PlanSideType serializes and parses locked values', () {
@@ -157,5 +159,20 @@ void main() {
     expect(restored.manualPackingList.single.text, 'Diagonal braces');
     expect(restored.manualPackingList.single.quantity, 8);
     expect(restored.manualPackingList.single.unit, 'pcs');
+  });
+
+  test('PlanViewEdge.fromJson keeps backward compatibility for legacy eaves/ridge keys', () {
+    final edge = PlanViewEdge.fromJson({
+      'id': 'e1',
+      'fromNodeId': 'n1',
+      'toNodeId': 'n2',
+      'lengthMm': 1234,
+      'sideType': 'langside',
+      'eavesHeightMm': 3100,
+      'ridgeHeightMm': 4500,
+    });
+
+    expect(edge.eavesMm, 3100);
+    expect(edge.ridgeMm, 4500);
   });
 }

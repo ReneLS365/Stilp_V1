@@ -235,7 +235,7 @@ void main() {
       expect(facade.label, 'Side 1');
       expect(facade.edgeLengthMm, 2000);
       expect(facade.eavesHeightMm, 3300);
-      expect(facade.ridgeHeightMm, 5000);
+      expect(facade.ridgeHeightMm, isNull);
     });
   });
 }

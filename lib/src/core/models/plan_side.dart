@@ -15,6 +15,17 @@ extension PlanSideTypeJson on PlanSideType {
         return 'andet';
     }
   }
+
+  String get displayLabel {
+    switch (this) {
+      case PlanSideType.langside:
+        return 'Langside';
+      case PlanSideType.gavl:
+        return 'Gavl';
+      case PlanSideType.andet:
+        return 'Andet';
+    }
+  }
 }
 
 PlanSideType planSideTypeFromJsonValue(String? rawType) {
