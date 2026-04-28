@@ -91,6 +91,16 @@ Det betyder:
 - T21 er merged via PR #31 med Android APK-distribution
 - T22 er merged via PR #33 med iOS-installationsworkflow
 - T23 er i review
+- Side dimension input-flow er merged via PR #39 (planvisning)
+- Issue #40 er lukket som completed via leverancen i PR #39
+
+Side dimension status efter PR #39:
+- Længde
+- Udhæng
+- Tagfod kun for Langside
+- Kip kun for Gavl
+- meter-baseret input med komma/punktum support
+- intern lagring i millimeter
 
 ---
 
