@@ -285,7 +285,7 @@ class _SideEditorSection extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Sides', style: Theme.of(context).textTheme.titleMedium),
+            Text('Sider', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 230),
@@ -331,33 +331,47 @@ class _SideEditorRow extends ConsumerStatefulWidget {
 }
 
 class _SideEditorRowState extends ConsumerState<_SideEditorRow> {
+  late final TextEditingController _lengthController;
   late final TextEditingController _eavesController;
   late final TextEditingController _ridgeController;
+  late final TextEditingController _overhangController;
 
   @override
   void initState() {
     super.initState();
-    _eavesController = TextEditingController(text: _asInput(widget.edge.eavesHeightMm));
-    _ridgeController = TextEditingController(text: _asInput(widget.edge.ridgeHeightMm));
+    _lengthController = TextEditingController(text: _asInput(widget.edge.lengthMm));
+    _eavesController = TextEditingController(text: _asInput(widget.edge.eavesMm));
+    _ridgeController = TextEditingController(text: _asInput(widget.edge.ridgeMm));
+    _overhangController = TextEditingController(text: _asInput(widget.edge.overhangMm));
   }
 
   @override
   void didUpdateWidget(covariant _SideEditorRow oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.edge.eavesHeightMm != widget.edge.eavesHeightMm &&
-        _eavesController.text != _asInput(widget.edge.eavesHeightMm)) {
-      _eavesController.text = _asInput(widget.edge.eavesHeightMm);
+    if (oldWidget.edge.lengthMm != widget.edge.lengthMm &&
+        _lengthController.text != _asInput(widget.edge.lengthMm)) {
+      _lengthController.text = _asInput(widget.edge.lengthMm);
     }
-    if (oldWidget.edge.ridgeHeightMm != widget.edge.ridgeHeightMm &&
-        _ridgeController.text != _asInput(widget.edge.ridgeHeightMm)) {
-      _ridgeController.text = _asInput(widget.edge.ridgeHeightMm);
+    if (oldWidget.edge.eavesMm != widget.edge.eavesMm &&
+        _eavesController.text != _asInput(widget.edge.eavesMm)) {
+      _eavesController.text = _asInput(widget.edge.eavesMm);
+    }
+    if (oldWidget.edge.ridgeMm != widget.edge.ridgeMm &&
+        _ridgeController.text != _asInput(widget.edge.ridgeMm)) {
+      _ridgeController.text = _asInput(widget.edge.ridgeMm);
+    }
+    if (oldWidget.edge.overhangMm != widget.edge.overhangMm &&
+        _overhangController.text != _asInput(widget.edge.overhangMm)) {
+      _overhangController.text = _asInput(widget.edge.overhangMm);
     }
   }
 
   @override
   void dispose() {
+    _lengthController.dispose();
     _eavesController.dispose();
     _ridgeController.dispose();
+    _overhangController.dispose();
     super.dispose();
   }
 
@@ -375,7 +389,7 @@ class _SideEditorRowState extends ConsumerState<_SideEditorRow> {
         DropdownButtonFormField<PlanSideType>(
           initialValue: widget.edge.sideType,
           decoration: const InputDecoration(
-            labelText: 'Side type',
+            labelText: 'Sidetype',
             border: OutlineInputBorder(),
             isDense: true,
           ),
@@ -383,7 +397,7 @@ class _SideEditorRowState extends ConsumerState<_SideEditorRow> {
               .map(
                 (value) => DropdownMenuItem(
                   value: value,
-                  child: Text(value.jsonValue),
+                  child: Text(value.displayLabel),
                 ),
               )
               .toList(growable: false),
@@ -403,39 +417,70 @@ class _SideEditorRowState extends ConsumerState<_SideEditorRow> {
               : null,
         ),
         const SizedBox(height: 8),
+        TextField(
+          controller: _lengthController,
+          enabled: widget.isEnabled,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Længde (m)',
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+          onEditingComplete: () => _normalizeInput(_lengthController),
+          onSubmitted: (_) => _saveDimensions(),
+        ),
+        const SizedBox(height: 8),
         Row(
           children: [
-            Expanded(
-              child: TextField(
-                controller: _eavesController,
-                enabled: widget.isEnabled,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Eaves (mm)',
-                  border: OutlineInputBorder(),
-                  isDense: true,
+            if (widget.edge.sideType == PlanSideType.langside)
+              Expanded(
+                child: TextField(
+                  controller: _eavesController,
+                  enabled: widget.isEnabled,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Tagfod (m)',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  onEditingComplete: () => _normalizeInput(_eavesController),
+                  onSubmitted: (_) => _saveDimensions(),
                 ),
-                onSubmitted: (_) => _saveHeights(),
               ),
-            ),
-            const SizedBox(width: 8),
+            if (widget.edge.sideType == PlanSideType.gavl)
+              Expanded(
+                child: TextField(
+                  controller: _ridgeController,
+                  enabled: widget.isEnabled,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Kip (m)',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  onEditingComplete: () => _normalizeInput(_ridgeController),
+                  onSubmitted: (_) => _saveDimensions(),
+                ),
+              ),
+            if (widget.edge.sideType != PlanSideType.andet) const SizedBox(width: 8),
             Expanded(
               child: TextField(
-                controller: _ridgeController,
+                controller: _overhangController,
                 enabled: widget.isEnabled,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  labelText: 'Ridge (mm)',
+                  labelText: 'Udhæng (m)',
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
-                onSubmitted: (_) => _saveHeights(),
+                onEditingComplete: () => _normalizeInput(_overhangController),
+                onSubmitted: (_) => _saveDimensions(),
               ),
             ),
             IconButton(
-              onPressed: widget.isEnabled ? _saveHeights : null,
+              onPressed: widget.isEnabled ? _saveDimensions : null,
               icon: const Icon(Icons.save_outlined),
-              tooltip: 'Save side heights',
+              tooltip: 'Gem sidefelter',
             ),
           ],
         ),
@@ -443,36 +488,92 @@ class _SideEditorRowState extends ConsumerState<_SideEditorRow> {
     );
   }
 
-  Future<void> _saveHeights() async {
-    final eavesParse = parseHeightInputMm(_eavesController.text);
-    final ridgeParse = parseHeightInputMm(_ridgeController.text);
-    if (!eavesParse.isValid || !ridgeParse.isValid) {
+  Future<void> _saveDimensions() async {
+    final lengthParse = parseHeightInputMm(_lengthController.text);
+    final overhangParse = parseHeightInputMm(_overhangController.text);
+    if (!lengthParse.isValid || !overhangParse.isValid) {
       if (!mounted) {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Invalid height format. Use whole millimetres (example: 3200).',
+            'Ugyldigt format. Brug meter, fx 10,20 eller 0,60 m.',
           ),
         ),
       );
       return;
     }
 
+    var nextEavesMm = widget.edge.eavesMm;
+    var nextRidgeMm = widget.edge.ridgeMm;
+
+    switch (widget.edge.sideType) {
+      case PlanSideType.langside:
+        final eavesParse = parseHeightInputMm(_eavesController.text);
+        if (!eavesParse.isValid) {
+          if (!mounted) {
+            return;
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Ugyldigt format. Brug meter, fx 10,20 eller 0,60 m.',
+              ),
+            ),
+          );
+          return;
+        }
+        nextEavesMm = eavesParse.valueMm;
+        break;
+      case PlanSideType.gavl:
+        final ridgeParse = parseHeightInputMm(_ridgeController.text);
+        if (!ridgeParse.isValid) {
+          if (!mounted) {
+            return;
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Ugyldigt format. Brug meter, fx 10,20 eller 0,60 m.',
+              ),
+            ),
+          );
+          return;
+        }
+        nextRidgeMm = ridgeParse.valueMm;
+        break;
+      case PlanSideType.andet:
+        break;
+    }
+
     final controller = ref.read(planViewControllerProvider);
-    await controller.updateSideHeights(
+    await controller.updateSideDimensions(
       projectId: widget.projectId,
       edgeId: widget.edge.id,
-      eavesHeightMm: eavesParse.valueMm,
-      ridgeHeightMm: ridgeParse.valueMm,
+      lengthMm: lengthParse.valueMm,
+      eavesMm: nextEavesMm,
+      ridgeMm: nextRidgeMm,
+      overhangMm: overhangParse.valueMm,
     );
+    _lengthController.text = _asInput(lengthParse.valueMm);
+    _eavesController.text = _asInput(nextEavesMm);
+    _ridgeController.text = _asInput(nextRidgeMm);
+    _overhangController.text = _asInput(overhangParse.valueMm);
     ref.invalidate(activeProjectDocumentProvider);
     ref.invalidate(projectsProvider);
   }
 
-  static String _asInput(int? value) => value?.toString() ?? '';
-  static String _formatLength(int mm) => '${(mm / 1000).toStringAsFixed(2)} m';
+  void _normalizeInput(TextEditingController controller) {
+    final parsed = parseHeightInputMm(controller.text);
+    if (!parsed.isValid) {
+      return;
+    }
+    controller.text = _asInput(parsed.valueMm);
+  }
+
+  static String _asInput(int? value) => formatMetersInput(value);
+  static String _formatLength(int mm) => formatMetersInput(mm);
 }
 
 class _PlanEmptyState extends StatelessWidget {

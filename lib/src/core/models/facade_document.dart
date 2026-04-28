@@ -71,8 +71,8 @@ class FacadeDocument {
       sideOrder: sideOrder,
       edgeLengthMm: edge.lengthMm,
       sideType: edge.sideType,
-      eavesHeightMm: edge.eavesHeightMm,
-      ridgeHeightMm: edge.ridgeHeightMm,
+      eavesHeightMm: edge.sideType == PlanSideType.langside ? edge.eavesMm : null,
+      ridgeHeightMm: edge.sideType == PlanSideType.gavl ? edge.ridgeMm : null,
     );
   }
 

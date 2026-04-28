@@ -99,11 +99,13 @@ class PlanViewController {
     });
   }
 
-  Future<void> updateSideHeights({
+  Future<void> updateSideDimensions({
     required String projectId,
     required String edgeId,
-    int? eavesHeightMm,
-    int? ridgeHeightMm,
+    int? lengthMm,
+    int? eavesMm,
+    int? ridgeMm,
+    int? overhangMm,
   }) async {
     await _enqueueSideMetadataSave(() {
       return _saveUpdatedPlanView(projectId, (currentPlan) {
@@ -111,8 +113,10 @@ class PlanViewController {
             .map(
               (edge) => edge.id == edgeId
                   ? edge.copyWith(
-                      eavesHeightMm: eavesHeightMm,
-                      ridgeHeightMm: ridgeHeightMm,
+                      lengthMm: lengthMm,
+                      eavesMm: eavesMm,
+                      ridgeMm: ridgeMm,
+                      overhangMm: overhangMm,
                     )
                   : edge,
             )
@@ -120,6 +124,20 @@ class PlanViewController {
         return currentPlan.copyWith(edges: nextEdges);
       });
     });
+  }
+
+  Future<void> updateSideHeights({
+    required String projectId,
+    required String edgeId,
+    int? eavesHeightMm,
+    int? ridgeHeightMm,
+  }) {
+    return updateSideDimensions(
+      projectId: projectId,
+      edgeId: edgeId,
+      eavesMm: eavesHeightMm,
+      ridgeMm: ridgeHeightMm,
+    );
   }
 
   Future<void> _enqueueSideMetadataSave(Future<void> Function() action) async {
@@ -183,8 +201,9 @@ class PlanViewController {
           toNodeId: to.id,
           lengthMm: _distanceMm(from, to),
           sideType: previous?.sideType ?? PlanSideType.andet,
-          eavesHeightMm: previous?.eavesHeightMm,
-          ridgeHeightMm: previous?.ridgeHeightMm,
+          eavesMm: previous?.eavesMm,
+          ridgeMm: previous?.ridgeMm,
+          overhangMm: previous?.overhangMm,
         ),
       );
     }

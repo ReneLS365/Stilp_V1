@@ -146,7 +146,7 @@ ProjectDocument _populatedProject() {
     now: DateTime.utc(2026, 4, 25, 8),
   ).copyWith(
     notes: 'Projektnoter her',
-    planView: const PlanViewData(
+    planView: PlanViewData(
       enabled: true,
       nodes: [
         PlanViewNode(id: 'n1', x: 0, y: 0),

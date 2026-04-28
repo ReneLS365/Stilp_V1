@@ -26,10 +26,25 @@ HeightInputParseResult parseHeightInputMm(String input) {
     return const HeightInputParseResult.valid(null);
   }
 
-  final parsed = int.tryParse(trimmed);
-  if (parsed == null || parsed < 0) {
+  final normalized = trimmed.replaceAll(RegExp(r'\s+'), '');
+  final match = RegExp(r'^(\d+(?:[.,]\d+)?)m?$').firstMatch(normalized);
+  if (match == null) {
     return const HeightInputParseResult.invalid();
   }
 
-  return HeightInputParseResult.valid(parsed);
+  final meters = double.tryParse(match.group(1)!.replaceAll(',', '.'));
+  if (meters == null || meters.isNaN || meters.isInfinite || meters < 0) {
+    return const HeightInputParseResult.invalid();
+  }
+
+  return HeightInputParseResult.valid((meters * 1000).round());
+}
+
+String formatMetersInput(int? valueMm) {
+  if (valueMm == null) {
+    return '';
+  }
+
+  final meters = (valueMm / 1000).toStringAsFixed(2).replaceAll('.', ',');
+  return '$meters m';
 }

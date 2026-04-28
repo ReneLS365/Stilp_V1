@@ -3,11 +3,46 @@ import 'package:stilp_v1/src/features/plan_view/height_input_parser.dart';
 
 void main() {
   group('parseHeightInputMm', () {
-    test('parses integer millimetres', () {
-      final result = parseHeightInputMm('3200');
+    test('parses decimal meter with comma', () {
+      final result = parseHeightInputMm('10,20');
 
       expect(result.isValid, isTrue);
-      expect(result.valueMm, 3200);
+      expect(result.valueMm, 10200);
+    });
+
+    test('parses decimal meter with dot', () {
+      final result = parseHeightInputMm('10.20');
+
+      expect(result.isValid, isTrue);
+      expect(result.valueMm, 10200);
+    });
+
+    test('parses decimal meter with unit suffix and spacing', () {
+      final result = parseHeightInputMm('10,20 m');
+
+      expect(result.isValid, isTrue);
+      expect(result.valueMm, 10200);
+    });
+
+    test('parses decimal meter with dot and unit suffix', () {
+      final result = parseHeightInputMm('10.20m');
+
+      expect(result.isValid, isTrue);
+      expect(result.valueMm, 10200);
+    });
+
+    test('parses short decimal meter value', () {
+      final result = parseHeightInputMm('0,60');
+
+      expect(result.isValid, isTrue);
+      expect(result.valueMm, 600);
+    });
+
+    test('parses short dot decimal meter value', () {
+      final result = parseHeightInputMm('0.60');
+
+      expect(result.isValid, isTrue);
+      expect(result.valueMm, 600);
     });
 
     test('treats empty input as explicit clear', () {
@@ -18,13 +53,24 @@ void main() {
     });
 
     test('rejects non-empty invalid input', () {
-      final invalidComma = parseHeightInputMm('3,200');
-      final invalidUnit = parseHeightInputMm('3200mm');
+      final invalidNegative = parseHeightInputMm('-1');
       final invalidWord = parseHeightInputMm('abc');
+      final invalidMixed = parseHeightInputMm('10,2,0');
 
-      expect(invalidComma.isValid, isFalse);
-      expect(invalidUnit.isValid, isFalse);
+      expect(invalidNegative.isValid, isFalse);
       expect(invalidWord.isValid, isFalse);
+      expect(invalidMixed.isValid, isFalse);
+    });
+  });
+
+  group('formatMetersInput', () {
+    test('formats values to meters with comma and suffix', () {
+      expect(formatMetersInput(10200), '10,20 m');
+      expect(formatMetersInput(600), '0,60 m');
+    });
+
+    test('returns empty string for null values', () {
+      expect(formatMetersInput(null), '');
     });
   });
 }

@@ -23,7 +23,7 @@ void main() {
           taskType: 'Facade test',
           now: DateTime.utc(2026, 4, 22, 10, 0),
         ).copyWith(
-          planView: const PlanViewData(
+          planView: PlanViewData(
             enabled: true,
             nodes: [
               PlanViewNode(id: 'n1', x: 0, y: 0),
@@ -74,7 +74,7 @@ void main() {
           taskType: 'Facade test',
           now: DateTime.utc(2026, 4, 22, 10, 0),
         ).copyWith(
-          planView: const PlanViewData(
+          planView: PlanViewData(
             enabled: true,
             nodes: [
               PlanViewNode(id: 'n1', x: 0, y: 0),
@@ -146,7 +146,7 @@ void main() {
           taskType: 'Facade test',
           now: DateTime.utc(2026, 4, 22, 10, 0),
         ).copyWith(
-          planView: const PlanViewData(
+          planView: PlanViewData(
             enabled: true,
             nodes: [
               PlanViewNode(id: 'n1', x: 0, y: 0),
@@ -199,7 +199,7 @@ void main() {
           taskType: 'Facade test',
           now: DateTime.utc(2026, 4, 22, 10, 0),
         ).copyWith(
-          planView: const PlanViewData(
+          planView: PlanViewData(
             enabled: true,
             nodes: [
               PlanViewNode(id: 'n1', x: 0, y: 0),
@@ -235,7 +235,7 @@ void main() {
       expect(facade.label, 'Side 1');
       expect(facade.edgeLengthMm, 2000);
       expect(facade.eavesHeightMm, 3300);
-      expect(facade.ridgeHeightMm, 5000);
+      expect(facade.ridgeHeightMm, isNull);
     });
   });
 }

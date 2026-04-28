@@ -25,23 +25,53 @@ class PlanViewNode {
 }
 
 class PlanViewEdge {
-  const PlanViewEdge({
+  const PlanViewEdge._internal({
     required this.id,
     required this.fromNodeId,
     required this.toNodeId,
     required this.lengthMm,
     required this.sideType,
-    this.eavesHeightMm,
-    this.ridgeHeightMm,
+    this.eavesMm,
+    this.ridgeMm,
+    this.overhangMm,
   });
+
+  factory PlanViewEdge({
+    required String id,
+    required String fromNodeId,
+    required String toNodeId,
+    required int lengthMm,
+    required PlanSideType sideType,
+    int? eavesMm,
+    int? ridgeMm,
+    int? overhangMm,
+    // Backward compatibility for old constructor callers.
+    int? eavesHeightMm,
+    int? ridgeHeightMm,
+  }) {
+    return PlanViewEdge._internal(
+      id: id,
+      fromNodeId: fromNodeId,
+      toNodeId: toNodeId,
+      lengthMm: lengthMm,
+      sideType: sideType,
+      eavesMm: eavesMm ?? eavesHeightMm,
+      ridgeMm: ridgeMm ?? ridgeHeightMm,
+      overhangMm: overhangMm,
+    );
+  }
 
   final String id;
   final String fromNodeId;
   final String toNodeId;
   final int lengthMm;
   final PlanSideType sideType;
-  final int? eavesHeightMm;
-  final int? ridgeHeightMm;
+  final int? eavesMm;
+  final int? ridgeMm;
+  final int? overhangMm;
+
+  int? get eavesHeightMm => eavesMm;
+  int? get ridgeHeightMm => ridgeMm;
 
   PlanViewEdge copyWith({
     String? id,
@@ -49,21 +79,24 @@ class PlanViewEdge {
     String? toNodeId,
     int? lengthMm,
     PlanSideType? sideType,
+    Object? eavesMm = _unset,
+    Object? ridgeMm = _unset,
+    Object? overhangMm = _unset,
+    // Backward compatibility aliases.
     Object? eavesHeightMm = _unset,
     Object? ridgeHeightMm = _unset,
   }) {
+    final resolvedEaves = eavesMm != _unset ? eavesMm : eavesHeightMm;
+    final resolvedRidge = ridgeMm != _unset ? ridgeMm : ridgeHeightMm;
     return PlanViewEdge(
       id: id ?? this.id,
       fromNodeId: fromNodeId ?? this.fromNodeId,
       toNodeId: toNodeId ?? this.toNodeId,
       lengthMm: lengthMm ?? this.lengthMm,
       sideType: sideType ?? this.sideType,
-      eavesHeightMm: eavesHeightMm == _unset
-          ? this.eavesHeightMm
-          : eavesHeightMm as int?,
-      ridgeHeightMm: ridgeHeightMm == _unset
-          ? this.ridgeHeightMm
-          : ridgeHeightMm as int?,
+      eavesMm: resolvedEaves == _unset ? this.eavesMm : resolvedEaves as int?,
+      ridgeMm: resolvedRidge == _unset ? this.ridgeMm : resolvedRidge as int?,
+      overhangMm: overhangMm == _unset ? this.overhangMm : overhangMm as int?,
     );
   }
 
@@ -74,8 +107,12 @@ class PlanViewEdge {
       'toNodeId': toNodeId,
       'lengthMm': lengthMm,
       'sideType': sideType.jsonValue,
-      'eavesHeightMm': eavesHeightMm,
-      'ridgeHeightMm': ridgeHeightMm,
+      'eavesMm': eavesMm,
+      'ridgeMm': ridgeMm,
+      'overhangMm': overhangMm,
+      // Backward compatibility with existing local project data.
+      'eavesHeightMm': eavesMm,
+      'ridgeHeightMm': ridgeMm,
     };
   }
 
@@ -86,8 +123,9 @@ class PlanViewEdge {
       toNodeId: (json['toNodeId'] as String?) ?? '',
       lengthMm: (json['lengthMm'] as num?)?.toInt() ?? 0,
       sideType: planSideTypeFromJsonValue(json['sideType'] as String?),
-      eavesHeightMm: (json['eavesHeightMm'] as num?)?.toInt(),
-      ridgeHeightMm: (json['ridgeHeightMm'] as num?)?.toInt(),
+      eavesMm: ((json['eavesMm'] ?? json['eavesHeightMm']) as num?)?.toInt(),
+      ridgeMm: ((json['ridgeMm'] ?? json['ridgeHeightMm']) as num?)?.toInt(),
+      overhangMm: (json['overhangMm'] as num?)?.toInt(),
     );
   }
 }
