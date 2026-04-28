@@ -94,7 +94,7 @@ void main() {
       taskType: 'Stillads',
       now: DateTime.utc(2026, 4, 25, 8, 0),
     ).copyWith(
-      planView: const PlanViewData(
+      planView: PlanViewData(
         enabled: true,
         nodes: [
           PlanViewNode(id: 'n1', x: 0, y: 0),

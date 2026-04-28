@@ -10,7 +10,7 @@ import 'package:stilp_v1/src/core/models/project_document.dart';
 
 void main() {
   test('PlanViewData.toJson uses locked planView keys', () {
-    const planView = PlanViewData(
+    final planView = PlanViewData(
       enabled: true,
       nodes: [
         PlanViewNode(id: 'n1', x: 10, y: 20),
@@ -91,7 +91,7 @@ void main() {
       now: created,
     ).copyWith(
       updatedAt: updatedAt,
-      planView: const PlanViewData(
+      planView: PlanViewData(
         enabled: true,
         nodes: [
           PlanViewNode(id: 'n1', x: 10, y: 20),
